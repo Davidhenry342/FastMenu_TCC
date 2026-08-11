@@ -1,0 +1,101 @@
+.hero {
+  padding: 2.4rem 0 1.8rem;
+}
+
+.heroContent {
+  max-width: 70rem;
+}
+
+.eyeBrow {
+  display: block;
+  margin-bottom: 0.8rem;
+
+  color: var(--primary);
+  font-size: 1.4rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1rem;
+}
+
+.hero h1 {
+  margin: 0 0 1.6rem;
+
+  color: var(--text-default);
+  font-size: 4.8rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.hero p {
+  max-width: 60rem;
+  margin: 0;
+
+  color: var(--text-muted);
+  font-size: 1.8rem;
+  line-height: 1.6;
+}
+
+.categories {
+  padding: 3.2rem 0;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 2rem;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+
+  color: var(--text-default);
+  font-size: 2.4rem;
+  font-weight: 600;
+}
+
+.sectionHeader span {
+  color: var(--text-muted);
+  font-size: 1.4rem;
+}
+
+.categoryList {
+  display: flex;
+  gap: 1.2rem;
+
+  overflow-x: auto;
+  padding-bottom: 0.8rem;
+}
+
+.categoryList button {
+  flex-shrink: 0;
+
+  padding: 1.2rem 2rem;
+
+  border: 0.1rem solid var(--gray-600);
+  border-radius: 0.8rem;
+
+  background: var(--gray-800);
+  color: var(--text-default);
+
+  font: inherit;
+  font-size: 1.4rem;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease-in-out,
+    border-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+.categoryList button:hover {
+  border-color: var(--primary);
+  background: var(--gray-700);
+  color: var(--primary);
+}
+
+.highlights {
+  padding: 3.2 0 6.4rem;
+}

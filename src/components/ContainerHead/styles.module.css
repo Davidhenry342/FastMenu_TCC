@@ -1,0 +1,10 @@
+.containerHead-fluid {
+  max-width: auto;
+  margin: 0 auto;
+  height: 7.2rem;
+  /* background-color: var(--primary); */
+}
+
+.content {
+  padding: 0.8rem;
+}

@@ -1,0 +1,68 @@
+.header {
+  width: 100%;
+  height: 7.2rem;
+
+  background: var(--primary);
+  border-bottom: 1px solid var(--gray-400);
+}
+
+.content {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.logo {
+  width: 5rem;
+  height: 5rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--text-logo);
+  border-radius: 0.8rem;
+}
+
+.logo img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.8rem;
+  display: block;
+  margin: 1.6rem 0;
+}
+
+.restaurantName {
+  color: var(--text-logo);
+  font-size: 2.4rem;
+  font-weight: 700;
+}
+
+.buttonCart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  background-color: var(--primary);
+  border: none;
+  border-radius: 0.8rem;
+  padding: 0.2rem;
+}
+
+.buttonCart:hover {
+  filter: brightness(80%);
+}
+
+.buttonCart svg {
+  height: 2.8rem;
+  width: 2.8rem;
+  color: var(--text-logo);
+}
