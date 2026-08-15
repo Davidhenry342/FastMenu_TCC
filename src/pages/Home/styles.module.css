@@ -99,3 +99,21 @@
 .highlights {
   padding: 3.2 0 6.4rem;
 }
+
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2.4rem;
+}
+
+@media (max-width: 90rem) {
+  .productGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 60) {
+  .productGrid {
+    grid-template-columns: 1fr;
+  }
+}

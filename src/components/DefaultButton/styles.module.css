@@ -1,0 +1,30 @@
+.defaultButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  padding: 1.2rem 2rem;
+
+  border: 0.1rem solid var(--gray-600);
+  border-radius: 0.8rem;
+
+  background: var(--gray-800);
+  color: var(--text-default);
+
+  font: inherit;
+  font-size: 1.4rem;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease-in-out,
+    border-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+.defaultButton:hover {
+  border-color: var(--primary);
+  background: var(--gray-700);
+  color: var(--primary);
+}

@@ -9,6 +9,8 @@ html {
 }
 
 body {
+  min-height: 100vh; /*Sugestão ChatGPT*/
+
   font-family:
     system-ui,
     -apple-system,
@@ -25,3 +27,8 @@ body {
   background: var(--gray-800);
   color: var(--text-default);
 }
+
+button,
+imput {
+  font: inherit;
+} /*Sugestão ChatGPT*/
