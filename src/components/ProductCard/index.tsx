@@ -1,12 +1,12 @@
 import type { Product } from '../../models/product';
 import styles from './styles.module.css';
 
-type PorductCardProps = {
+type ProductCardProps = {
   product: Product;
   onAdd?: (product: Product) => void;
 };
 
-export function ProdutcCard({ product, onAdd }: PorductCardProps) {
+export function ProductCard({ product, onAdd }: ProductCardProps) {
   return (
     <article className={styles.card}>
       {product.imageUrl && (

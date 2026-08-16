@@ -97,7 +97,7 @@
 }
 
 .highlights {
-  padding: 3.2 0 6.4rem;
+  padding: 3.2rem 0 6.4rem;
 }
 
 .productGrid {
@@ -112,7 +112,7 @@
   }
 }
 
-@media (max-width: 60) {
+@media (max-width: 60rem) {
   .productGrid {
     grid-template-columns: 1fr;
   }

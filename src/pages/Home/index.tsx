@@ -1,6 +1,7 @@
 import { Container } from '../../components/Container';
+import { DefaultButton } from '../../components/DefaultButton';
 import { Header } from '../../components/Header';
-import { ProdutcCard } from '../../components/ProductCard';
+import { ProductCard } from '../../components/ProductCard';
 import type { Product } from '../../models/product';
 import styles from './styles.module.css';
 
@@ -57,10 +58,10 @@ export function Home() {
             </div>
 
             <div className={styles.categoryList}>
-              <button>Entradas</button>
-              <button>Pratos principais</button>
-              <button>Bebidas</button>
-              <button>Sobremesas</button>
+              <DefaultButton>Entradas</DefaultButton>
+              <DefaultButton>Pratos principais</DefaultButton>
+              <DefaultButton>Bebidas</DefaultButton>
+              <DefaultButton>Sobremesas</DefaultButton>
             </div>
           </section>
 
@@ -73,7 +74,7 @@ export function Home() {
 
             <div className={styles.productGrid}>
               {products.map(product => (
-                <ProdutcCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           </section>
