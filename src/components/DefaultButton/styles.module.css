@@ -28,3 +28,9 @@
   background: var(--gray-700);
   color: var(--primary);
 }
+
+.defaultButton.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--text-over-primary);
+}

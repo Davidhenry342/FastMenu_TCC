@@ -2,37 +2,22 @@ import { Container } from '../../components/Container';
 import { DefaultButton } from '../../components/DefaultButton';
 import { Header } from '../../components/Header';
 import { ProductCard } from '../../components/ProductCard';
-import type { Product } from '../../models/product';
+import { products } from '../../data/products';
+import { useState } from 'react';
 import styles from './styles.module.css';
-
-const products: Product[] = [
-  {
-    id: '1',
-    name: 'Hambúrgher Artesanal',
-    description:
-      'Pão Brioche, Hambúrguer artesanal bovino, queijo, alface e molho especial.',
-    price: 32.9,
-    preparationTime: 20,
-  },
-
-  {
-    id: '2',
-    name: 'Filé com Fritas',
-    description: 'Filé gralhado acompanhado de batatas fritas crocantes.',
-    price: 42.9,
-    preparationTime: 25,
-  },
-
-  {
-    id: '3',
-    name: 'Risoto de Camarão',
-    description: 'Risoto cremoso preparado com camarões e temperos especiais.',
-    price: 49.9,
-    preparationTime: 30,
-  },
-];
+import { categories } from '../../data/categories';
 
 export function Home() {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const visibleProducts = selectedCategory
+    ? products.filter(product => product.categoryId === selectedCategory)
+    : products;
+
+  const activeCategoryName =
+    categories.find(category => category.id === selectedCategory)?.name ??
+    'Destaques';
+
   return (
     <>
       <Header restaurantName="Fast Menu restaurante" />
@@ -58,22 +43,33 @@ export function Home() {
             </div>
 
             <div className={styles.categoryList}>
-              <DefaultButton>Entradas</DefaultButton>
-              <DefaultButton>Pratos principais</DefaultButton>
-              <DefaultButton>Bebidas</DefaultButton>
-              <DefaultButton>Sobremesas</DefaultButton>
+              <DefaultButton
+                onClick={() => setSelectedCategory(null)}
+                isActive={selectedCategory === null}
+              >
+                Todos
+              </DefaultButton>
+              {categories.map(category => (
+                <DefaultButton
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  isActive={selectedCategory === category.id}
+                >
+                  {category.name}
+                </DefaultButton>
+              ))}
             </div>
           </section>
 
           <section className={styles.highlights}>
             <div className={styles.sectionHeader}>
-              <h2>Destaques</h2>
+              <h2>{activeCategoryName}</h2>
 
               <span>Confira nossas opções</span>
             </div>
 
             <div className={styles.productGrid}>
-              {products.map(product => (
+              {visibleProducts.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>

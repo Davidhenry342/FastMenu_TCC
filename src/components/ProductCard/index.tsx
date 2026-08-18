@@ -1,4 +1,6 @@
 import type { Product } from '../../models/product';
+import { FormatCurrency } from '../../utils/format';
+import { DefaultProductImage } from '../../utils/imageDefault';
 import styles from './styles.module.css';
 
 type ProductCardProps = {
@@ -7,15 +9,13 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ product, onAdd }: ProductCardProps) {
+  const imageUrl = product.imageUrl ?? DefaultProductImage;
+
   return (
     <article className={styles.card}>
       {product.imageUrl && (
         <div className={styles.imageContainer}>
-          <img
-            src={product.imageUrl}
-            alt={product.name}
-            className={styles.image}
-          />
+          <img src={imageUrl} alt={product.name} className={styles.image} />
         </div>
       )}
 
@@ -27,9 +27,7 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
         </div>
 
         <div className={styles.details}>
-          <span className={styles.price}>
-            R$ {product.price.toFixed(2).replace('.', ',')}
-          </span>
+          <span className={styles.price}>{FormatCurrency(product.price)}</span>
 
           <span className={styles.preparationTime}>
             {product.preparationTime} min
