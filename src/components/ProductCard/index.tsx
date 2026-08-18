@@ -13,11 +13,9 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
 
   return (
     <article className={styles.card}>
-      {product.imageUrl && (
-        <div className={styles.imageContainer}>
-          <img src={imageUrl} alt={product.name} className={styles.image} />
-        </div>
-      )}
+      <div className={styles.imageContainer}>
+        <img src={imageUrl} alt={product.name} className={styles.image} />
+      </div>
 
       <div className={styles.content}>
         <div className={styles.info}>

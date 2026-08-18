@@ -9,7 +9,7 @@ export const products: Product[] = [
     price: 32.9,
     preparationTime: 20,
     categoryId: '1',
-    imageUrl: 'https://placehold.co/50X50',
+    imageUrl: 'https://placehold.co/100X100',
   },
   {
     id: '2',
