@@ -1,14 +1,17 @@
+import { useState } from 'react';
 import { Container } from '../../components/Container';
 import { DefaultButton } from '../../components/DefaultButton';
 import { Header } from '../../components/Header';
 import { ProductCard } from '../../components/ProductCard';
-import { products } from '../../data/products';
-import { useState } from 'react';
-import styles from './styles.module.css';
+import { ProductModal } from '../../components/ProductModal';
 import { categories } from '../../data/categories';
+import { products } from '../../data/products';
+import type { Product } from '../../models/product';
+import styles from './styles.module.css';
 
 export function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const visibleProducts = selectedCategory
     ? products.filter(product => product.categoryId === selectedCategory)
@@ -70,12 +73,24 @@ export function Home() {
 
             <div className={styles.productGrid}>
               {visibleProducts.map(product => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAdd={setSelectedProduct}
+                />
               ))}
             </div>
           </section>
         </Container>
       </main>
+
+      {selectedProduct && (
+        <ProductModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onConfirm={() => setSelectedProduct(null)}
+        />
+      )}
     </>
   );
 }
