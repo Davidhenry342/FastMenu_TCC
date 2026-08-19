@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { Comanda } from '../../components/Comanda';
 import { Container } from '../../components/Container';
 import { DefaultButton } from '../../components/DefaultButton';
 import { Header } from '../../components/Header';
 import { ProductCard } from '../../components/ProductCard';
 import { ProductModal } from '../../components/ProductModal';
+import { useOrder } from '../../contexts/OrderContext';
 import { categories } from '../../data/categories';
 import { products } from '../../data/products';
 import type { Product } from '../../models/product';
@@ -12,6 +14,8 @@ import styles from './styles.module.css';
 export function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isComandaOpen, setIsComandaOpen] = useState(false);
+  const { addOrderItem } = useOrder();
 
   const visibleProducts = selectedCategory
     ? products.filter(product => product.categoryId === selectedCategory)
@@ -23,7 +27,10 @@ export function Home() {
 
   return (
     <>
-      <Header restaurantName="Fast Menu restaurante" />
+      <Header
+        restaurantName="Fast Menu restaurante"
+        onCartClick={() => setIsComandaOpen(true)}
+      />
 
       <main>
         <Container>
@@ -84,11 +91,23 @@ export function Home() {
         </Container>
       </main>
 
+      {isComandaOpen && <Comanda onClose={() => setIsComandaOpen(false)} />}
+
       {selectedProduct && (
         <ProductModal
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
-          onConfirm={() => setSelectedProduct(null)}
+          onConfirm={(product, quantity, observation) => {
+            addOrderItem({
+              id: crypto.randomUUID(),
+              product,
+              quantity,
+              orderedAt: new Date(),
+              status: 'Aguardando confirmação',
+              observation: observation.trim() || undefined,
+            });
+            setSelectedProduct(null);
+          }}
         />
       )}
     </>

@@ -4,9 +4,10 @@ import { ShoppingCart } from 'lucide-react';
 
 type HeaderProps = {
   restaurantName: string;
+  onCartClick?: () => void;
 };
 
-export function Header({ restaurantName }: HeaderProps) {
+export function Header({ restaurantName, onCartClick }: HeaderProps) {
   return (
     <header className={styles.header}>
       <ContainerHead>
@@ -18,7 +19,7 @@ export function Header({ restaurantName }: HeaderProps) {
 
             <span className={styles.restaurantName}>{restaurantName}</span>
           </div>
-          <button className={styles.buttonCart}>
+          <button type="button" className={styles.buttonCart} onClick={onCartClick}>
             <ShoppingCart />
           </button>
         </div>

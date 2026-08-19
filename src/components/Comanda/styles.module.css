@@ -1,0 +1,265 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 2.4rem;
+
+  background: rgba(0, 0, 0, 0.6);
+
+  z-index: 1000;
+}
+
+.modal {
+  width: 100%;
+  max-width: 48rem;
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  padding: 2.4rem;
+
+  border: 0.1rem solid var(--gray-700);
+  border-radius: 1.2rem;
+
+  background: var(--card-background);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 1.6rem;
+}
+
+.header h2 {
+  margin: 0;
+
+  color: var(--text-default);
+  font-size: 2.4rem;
+  font-weight: 600;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0.4rem;
+
+  border: none;
+  border-radius: 0.8rem;
+
+  background: transparent;
+  color: var(--text-muted);
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease-in-out,
+    background 0.2s ease-in-out;
+}
+
+.closeButton:hover {
+  background: var(--gray-800);
+  color: var(--text-default);
+}
+
+.closeButton svg {
+  height: 2.2rem;
+  width: 2.2rem;
+}
+
+.emptyState {
+  padding: 3.2rem 0;
+
+  color: var(--text-muted);
+  font-size: 1.4rem;
+
+  text-align: center;
+}
+
+.itemList {
+  list-style: none;
+
+  margin: 0;
+  padding: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 1.2rem;
+}
+
+.item {
+  display: flex;
+
+  gap: 1.6rem;
+
+  padding: 1.2rem;
+
+  border: 0.1rem solid var(--gray-700);
+  border-radius: 0.8rem;
+
+  background: var(--background-secondary);
+}
+
+.thumbnail {
+  width: 5rem;
+  height: 5rem;
+
+  flex-shrink: 0;
+
+  border-radius: 0.8rem;
+
+  object-fit: cover;
+
+  display: block;
+}
+
+.itemInfo {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.4rem;
+
+  min-width: 0;
+}
+
+.itemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1.2rem;
+}
+
+.itemName {
+  color: var(--text-default);
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.itemQuantity {
+  color: var(--primary);
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.itemMeta {
+  display: flex;
+  align-items: center;
+
+  gap: 1.2rem;
+}
+
+.itemMeta > span:first-child {
+  color: var(--text-muted);
+  font-size: 1.3rem;
+}
+
+.statusBadge {
+  padding: 0.2rem 0.8rem;
+
+  border: 0.1rem solid;
+  border-radius: 0.8rem;
+
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.statusEmProducao {
+  border-color: var(--info);
+  color: var(--info);
+}
+
+.statusAguardando {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.statusCancelado {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.statusEntregue {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.observation {
+  margin: 0;
+
+  color: var(--text-muted);
+  font-size: 1.3rem;
+  line-height: 1.4;
+}
+
+.itemSubtotal {
+  color: var(--text-default);
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+
+  gap: 1.2rem;
+
+  margin-top: 2.4rem;
+
+  padding-top: 1.6rem;
+
+  border-top: 0.1rem solid var(--gray-700);
+}
+
+.totalRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.totalLabel {
+  color: var(--text-muted);
+  font-size: 1.4rem;
+}
+
+.totalValue {
+  color: var(--primary);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.backButton {
+  width: 100%;
+
+  padding: 1.2rem;
+
+  border: 0.1rem solid var(--gray-600);
+  border-radius: 0.8rem;
+
+  background: var(--gray-800);
+  color: var(--text-default);
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease-in-out,
+    border-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+.backButton:hover {
+  border-color: var(--primary);
+  background: var(--gray-700);
+  color: var(--primary);
+}

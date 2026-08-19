@@ -133,6 +133,44 @@
   text-align: center;
 }
 
+.observationField {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.8rem;
+
+  margin: 1.6rem 0 2.4rem;
+}
+
+.observationLabel {
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.observationInput {
+  resize: vertical;
+
+  padding: 1.2rem;
+
+  border: 0.1rem solid var(--gray-600);
+  border-radius: 0.8rem;
+
+  background: var(--gray-800);
+  color: var(--text-default);
+
+  font: inherit;
+  font-size: 1.4rem;
+
+  transition: border-color 0.2s ease-in-out;
+}
+
+.observationInput:focus {
+  outline: none;
+
+  border-color: var(--primary);
+}
+
 .confirmButton {
   width: 100%;
 

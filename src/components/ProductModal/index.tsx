@@ -8,11 +8,12 @@ import styles from './styles.module.css';
 type ProductModalProps = {
   product: Product;
   onClose: () => void;
-  onConfirm: (product: Product, quantity: number) => void;
+  onConfirm: (product: Product, quantity: number, observation: string) => void;
 };
 
 export function ProductModal({ product, onClose, onConfirm }: ProductModalProps) {
   const [quantity, setQuantity] = useState(1);
+  const [observation, setObservation] = useState('');
 
   const imageUrl = product.imageUrl ?? DefaultProductImage;
 
@@ -83,10 +84,25 @@ export function ProductModal({ product, onClose, onConfirm }: ProductModalProps)
           </button>
         </div>
 
+        <div className={styles.observationField}>
+          <label htmlFor="product-modal-observation" className={styles.observationLabel}>
+            Observação
+          </label>
+
+          <textarea
+            id="product-modal-observation"
+            className={styles.observationInput}
+            value={observation}
+            onChange={event => setObservation(event.target.value)}
+            rows={3}
+            placeholder="Alguma observação sobre o pedido?"
+          />
+        </div>
+
         <button
           type="button"
           className={styles.confirmButton}
-          onClick={() => onConfirm(product, quantity)}
+          onClick={() => onConfirm(product, quantity, observation)}
         >
           Confirmar
         </button>
