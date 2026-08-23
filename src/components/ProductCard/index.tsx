@@ -5,15 +5,20 @@ import styles from './styles.module.css';
 
 type ProductCardProps = {
   product: Product;
+  categoryName?: string;
   onAdd?: (product: Product) => void;
 };
 
-export function ProductCard({ product, onAdd }: ProductCardProps) {
+export function ProductCard({ product, categoryName, onAdd }: ProductCardProps) {
   const imageUrl = product.imageUrl ?? DefaultProductImage;
 
   return (
     <article className={styles.card}>
       <div className={styles.imageContainer}>
+        {categoryName && (
+          <span className={styles.categoryBadge}>{categoryName}</span>
+        )}
+
         <img src={imageUrl} alt={product.name} className={styles.image} />
       </div>
 

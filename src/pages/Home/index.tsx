@@ -79,13 +79,20 @@ export function Home() {
             </div>
 
             <div className={styles.productGrid}>
-              {visibleProducts.map(product => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onAdd={setSelectedProduct}
-                />
-              ))}
+              {visibleProducts.map(product => {
+                const categoryName = categories.find(
+                  category => category.id === product.categoryId,
+                )?.name;
+
+                return (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    categoryName={categoryName}
+                    onAdd={setSelectedProduct}
+                  />
+                );
+              })}
             </div>
           </section>
         </Container>

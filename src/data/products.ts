@@ -25,7 +25,7 @@ export const products: Product[] = [
     name: 'Risoto de Camarão',
     description: 'Risoto cremoso preparado com camarões e temperos especiais.',
     price: 49.9,
-    categoryId: '1',
+    categoryId: '2',
     preparationTime: 30,
   },
 
