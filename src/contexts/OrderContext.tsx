@@ -5,6 +5,7 @@ import type { OrderItem } from '../models/order';
 type OrderContextValue = {
   orderItems: OrderItem[];
   addOrderItem: (item: OrderItem) => void;
+  updateOrderItem: (id: string, changes: Partial<OrderItem>) => void;
 };
 
 const OrderContext = createContext<OrderContextValue | null>(null);
@@ -20,8 +21,14 @@ export function OrderProvider({ children }: OrderProviderProps) {
     setOrderItems(current => [...current, item]);
   };
 
+  const updateOrderItem = (id: string, changes: Partial<OrderItem>) => {
+    setOrderItems(current =>
+      current.map(item => (item.id === id ? { ...item, ...changes } : item)),
+    );
+  };
+
   return (
-    <OrderContext.Provider value={{ orderItems, addOrderItem }}>
+    <OrderContext.Provider value={{ orderItems, addOrderItem, updateOrderItem }}>
       {children}
     </OrderContext.Provider>
   );

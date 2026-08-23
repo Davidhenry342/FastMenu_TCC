@@ -106,6 +106,99 @@
   border-radius: 0.8rem;
 
   background: var(--background-secondary);
+
+  cursor: pointer;
+
+  transition:
+    filter 0.2s ease-in-out,
+    border-color 0.2s ease-in-out;
+}
+
+.itemSelected {
+  border-color: var(--primary);
+}
+
+.itemPaid {
+  cursor: default;
+
+  filter: brightness(45%);
+}
+
+.partiallyPaid {
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.paidBadge {
+  display: flex;
+  align-items: center;
+
+  gap: 0.4rem;
+
+  padding: 0.2rem 0.8rem;
+
+  border-radius: 0.8rem;
+
+  background: var(--gray-800);
+  color: var(--success);
+
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.paidBadge svg {
+  height: 1.4rem;
+  width: 1.4rem;
+}
+
+.qtySelector {
+  display: flex;
+  align-items: center;
+
+  gap: 1.2rem;
+
+  margin-top: 0.4rem;
+}
+
+.qtyButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0.4rem;
+
+  border: 0.1rem solid var(--gray-600);
+  border-radius: 0.6rem;
+
+  background: var(--gray-800);
+  color: var(--text-default);
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+.qtyButton:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.qtyButton svg {
+  height: 1.6rem;
+  width: 1.6rem;
+}
+
+.qtyValue {
+  min-width: 2.4rem;
+
+  color: var(--text-default);
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  text-align: center;
 }
 
 .thumbnail {
@@ -234,6 +327,48 @@
   color: var(--primary);
   font-size: 2rem;
   font-weight: 700;
+}
+
+.selectedValue {
+  color: var(--success);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.payButton {
+  width: 100%;
+
+  padding: 1.2rem;
+
+  border: none;
+  border-radius: 0.8rem;
+
+  background: var(--primary);
+  color: var(--text-over-primary);
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease,
+    opacity 0.2s ease;
+}
+
+.payButton:hover:not(:disabled) {
+  background: var(--primary-light);
+}
+
+.payButton:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.payButton:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
 }
 
 .backButton {
