@@ -17,9 +17,18 @@ export function Home() {
   const [isComandaOpen, setIsComandaOpen] = useState(false);
   const { addOrderItem } = useOrder();
 
-  const visibleProducts = selectedCategory
+  const categoryOrder = new Map(
+    categories.map((category, index) => [category.id, index]),
+  );
+
+  const visibleProducts = (selectedCategory
     ? products.filter(product => product.categoryId === selectedCategory)
-    : products;
+    : [...products]
+  ).sort(
+    (a, b) =>
+      (categoryOrder.get(a.categoryId) ?? Number.POSITIVE_INFINITY) -
+      (categoryOrder.get(b.categoryId) ?? Number.POSITIVE_INFINITY),
+  );
 
   const activeCategoryName =
     categories.find(category => category.id === selectedCategory)?.name ??
