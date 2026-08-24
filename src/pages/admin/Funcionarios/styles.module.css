@@ -1,0 +1,254 @@
+.section {
+  padding: 3.2rem 0 6.4rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 2rem;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+
+  color: var(--text-default);
+  font-size: 2.4rem;
+  font-weight: 600;
+}
+
+.searchBar {
+  position: relative;
+
+  margin-bottom: 2.4rem;
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  left: 1.2rem;
+
+  transform: translateY(-50%);
+
+  height: 1.8rem;
+  width: 1.8rem;
+
+  color: var(--text-muted);
+}
+
+.searchInput {
+  width: 100%;
+
+  padding: 1.2rem 1.6rem 1.2rem 4rem;
+
+  border: 0.1rem solid var(--gray-600);
+  border-radius: 0.8rem;
+
+  background: var(--gray-800);
+  color: var(--text-default);
+
+  font: inherit;
+  font-size: 1.4rem;
+
+  transition: border-color 0.2s ease-in-out;
+}
+
+.searchInput:focus {
+  outline: none;
+
+  border-color: var(--primary);
+}
+
+.emptyState {
+  padding: 3.2rem 0;
+
+  color: var(--text-muted);
+  font-size: 1.4rem;
+
+  text-align: center;
+}
+
+.table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  border: 0.1rem solid var(--gray-700);
+  border-radius: 0.8rem;
+
+  overflow: hidden;
+}
+
+.table th {
+  padding: 1.2rem 1.6rem;
+
+  background: var(--background-secondary);
+  color: var(--text-default);
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  text-align: left;
+}
+
+.table td {
+  padding: 1.2rem 1.6rem;
+
+  border-top: 0.1rem solid var(--gray-700);
+
+  color: var(--text-muted);
+  font-size: 1.4rem;
+}
+
+.row:hover {
+  background: var(--background-secondary);
+}
+
+.actionsColumn,
+.actionsCell {
+  width: 9rem;
+
+  text-align: right;
+}
+
+.roleBadge {
+  padding: 0.2rem 0.8rem;
+
+  border: 0.1rem solid var(--primary);
+  border-radius: 0.8rem;
+
+  color: var(--primary);
+
+  font-size: 1.2rem;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.actionsCell {
+  white-space: nowrap;
+}
+
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-left: 0.4rem;
+
+  padding: 0.6rem;
+
+  border: none;
+  border-radius: 0.6rem;
+
+  background: transparent;
+  color: var(--text-muted);
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+.actionButton:hover {
+  background: var(--gray-800);
+  color: var(--primary);
+}
+
+.deleteActionButton:hover {
+  background: var(--gray-800);
+  color: var(--error);
+}
+
+.actionButton svg {
+  height: 1.8rem;
+  width: 1.8rem;
+}
+
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 2.4rem;
+
+  background: rgba(0, 0, 0, 0.6);
+
+  z-index: 1000;
+}
+
+.confirmBox {
+  width: 100%;
+  max-width: 32rem;
+
+  padding: 2.4rem;
+
+  border: 0.1rem solid var(--gray-700);
+  border-radius: 1.2rem;
+
+  background: var(--card-background);
+
+  text-align: center;
+}
+
+.confirmMessage {
+  margin: 0 0 2rem;
+
+  color: var(--text-default);
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.confirmActions {
+  display: flex;
+
+  gap: 1.2rem;
+}
+
+.cancelButton,
+.deleteButton {
+  flex: 1;
+
+  padding: 1.2rem;
+
+  border-radius: 0.8rem;
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease-in-out,
+    border-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+.cancelButton {
+  border: 0.1rem solid var(--gray-600);
+
+  background: var(--gray-800);
+  color: var(--text-default);
+}
+
+.cancelButton:hover {
+  border-color: var(--primary);
+  background: var(--gray-700);
+  color: var(--primary);
+}
+
+.deleteButton {
+  border: none;
+
+  background: var(--error);
+  color: #ffffff;
+}
+
+.deleteButton:hover {
+  filter: brightness(90%);
+}

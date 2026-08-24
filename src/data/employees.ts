@@ -1,0 +1,44 @@
+import type { Employee } from '../models/employee';
+
+export const employees: Employee[] = [
+  {
+    id: '1',
+    cpf: '123.456.789-00',
+    name: 'Ana Souza',
+    phone: '(11) 98888-1111',
+    address: 'Rua das Flores, 123 - São Paulo/SP',
+    role: 'Garçom',
+  },
+  {
+    id: '2',
+    cpf: '234.567.890-11',
+    name: 'Bruno Lima',
+    phone: '(11) 97777-2222',
+    address: 'Av. Paulista, 1000 - São Paulo/SP',
+    role: 'Cozinheiro(a)',
+  },
+  {
+    id: '3',
+    cpf: '345.678.901-22',
+    name: 'Carla Mendes',
+    phone: '(21) 96666-3333',
+    address: 'Rua do Comércio, 45 - Rio de Janeiro/RJ',
+    role: 'Caixa',
+  },
+  {
+    id: '4',
+    cpf: '456.789.012-33',
+    name: 'Diego Ferreira',
+    phone: '(31) 95555-4444',
+    address: 'Rua da Alegria, 789 - Belo Horizonte/MG',
+    role: 'Gerente',
+  },
+  {
+    id: '5',
+    cpf: '567.890.123-44',
+    name: 'Elisa Costa',
+    phone: '(41) 94444-5555',
+    address: 'Travessa Verde, 12 - Curitiba/PR',
+    role: 'Garçom',
+  },
+];
