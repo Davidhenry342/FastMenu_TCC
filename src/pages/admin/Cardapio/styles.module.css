@@ -1,0 +1,175 @@
+.section {
+  padding: 3.2rem 0 6.4rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 2rem;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+
+  color: var(--text-default);
+  font-size: 2.4rem;
+  font-weight: 600;
+}
+
+.searchBar {
+  position: relative;
+
+  margin-bottom: 2.4rem;
+}
+
+.searchIcon {
+  position: absolute;
+  top: 50%;
+  left: 1.2rem;
+
+  transform: translateY(-50%);
+
+  height: 1.8rem;
+  width: 1.8rem;
+
+  color: var(--text-muted);
+}
+
+.searchInput {
+  width: 100%;
+
+  padding: 1.2rem 1.6rem 1.2rem 4rem;
+
+  border: 0.1rem solid var(--gray-600);
+  border-radius: 0.8rem;
+
+  background: var(--gray-800);
+  color: var(--text-default);
+
+  font: inherit;
+  font-size: 1.4rem;
+
+  transition: border-color 0.2s ease-in-out;
+}
+
+.searchInput:focus {
+  outline: none;
+
+  border-color: var(--primary);
+}
+
+.emptyState {
+  padding: 3.2rem 0;
+
+  color: var(--text-muted);
+  font-size: 1.4rem;
+
+  text-align: center;
+}
+
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 2.4rem;
+}
+
+@media (max-width: 90rem) {
+  .productGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 60rem) {
+  .productGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 2.4rem;
+
+  background: rgba(0, 0, 0, 0.6);
+
+  z-index: 1000;
+}
+
+.confirmBox {
+  width: 100%;
+  max-width: 32rem;
+
+  padding: 2.4rem;
+
+  border: 0.1rem solid var(--gray-700);
+  border-radius: 1.2rem;
+
+  background: var(--card-background);
+
+  text-align: center;
+}
+
+.confirmMessage {
+  margin: 0 0 2rem;
+
+  color: var(--text-default);
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.confirmActions {
+  display: flex;
+
+  gap: 1.2rem;
+}
+
+.cancelButton,
+.deleteButton {
+  flex: 1;
+
+  padding: 1.2rem;
+
+  border-radius: 0.8rem;
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease-in-out,
+    border-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+.cancelButton {
+  border: 0.1rem solid var(--gray-600);
+
+  background: var(--gray-800);
+  color: var(--text-default);
+}
+
+.cancelButton:hover {
+  border-color: var(--primary);
+  background: var(--gray-700);
+  color: var(--primary);
+}
+
+.deleteButton {
+  border: none;
+
+  background: var(--error);
+  color: #ffffff;
+}
+
+.deleteButton:hover {
+  filter: brightness(90%);
+}

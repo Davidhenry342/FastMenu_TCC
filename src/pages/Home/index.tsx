@@ -6,8 +6,8 @@ import { Header } from '../../components/Header';
 import { ProductCard } from '../../components/ProductCard';
 import { ProductModal } from '../../components/ProductModal';
 import { useOrder } from '../../contexts/OrderContext';
+import { useProducts } from '../../contexts/ProductContext';
 import { categories } from '../../data/categories';
-import { products } from '../../data/products';
 import type { Product } from '../../models/product';
 import styles from './styles.module.css';
 
@@ -16,6 +16,7 @@ export function Home() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isComandaOpen, setIsComandaOpen] = useState(false);
   const { addOrderItem } = useOrder();
+  const { products } = useProducts();
 
   const categoryOrder = new Map(
     categories.map((category, index) => [category.id, index]),
