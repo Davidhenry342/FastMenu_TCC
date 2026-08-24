@@ -1,0 +1,238 @@
+.section {
+  padding: 3.2rem 0 6.4rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 2rem;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+
+  color: var(--text-default);
+  font-size: 2.4rem;
+  font-weight: 600;
+}
+
+.legend {
+  display: flex;
+
+  gap: 2.4rem;
+
+  margin-bottom: 2.4rem;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+
+  gap: 0.8rem;
+
+  color: var(--text-muted);
+  font-size: 1.3rem;
+}
+
+.dot {
+  width: 1.2rem;
+  height: 1.2rem;
+
+  border-radius: 50%;
+}
+
+.dotAvailable {
+  background: var(--success);
+}
+
+.dotOccupied {
+  background: var(--error);
+}
+
+.emptyState {
+  padding: 3.2rem 0;
+
+  color: var(--text-muted);
+  font-size: 1.4rem;
+
+  text-align: center;
+}
+
+.tableGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+
+  gap: 2.4rem;
+}
+
+.tableCard {
+  position: relative;
+
+  aspect-ratio: 1 / 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 1.6rem;
+
+  cursor: pointer;
+
+  transition:
+    filter 0.2s ease-in-out,
+    transform 0.2s ease-in-out;
+}
+
+.tableCard:hover {
+  filter: brightness(85%);
+  transform: translateY(-0.2rem);
+}
+
+.available {
+  background: var(--success);
+}
+
+.occupied {
+  background: var(--error);
+}
+
+.tableNumber {
+  color: #ffffff;
+
+  font-size: 4.8rem;
+  font-weight: 700;
+}
+
+.actions {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.8rem;
+
+  display: flex;
+
+  gap: 0.4rem;
+
+  opacity: 0;
+
+  transition: opacity 0.2s ease-in-out;
+}
+
+.tableCard:hover .actions,
+.tableCard:focus-visible .actions {
+  opacity: 1;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0.6rem;
+
+  border: none;
+  border-radius: 0.6rem;
+
+  background: rgba(13, 17, 27, 0.7);
+  color: #ffffff;
+
+  cursor: pointer;
+
+  transition: background 0.2s ease-in-out;
+}
+
+.actionButton:hover {
+  background: rgba(13, 17, 27, 0.95);
+}
+
+.actionButton svg {
+  height: 1.8rem;
+  width: 1.8rem;
+}
+
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 2.4rem;
+
+  background: rgba(0, 0, 0, 0.6);
+
+  z-index: 1000;
+}
+
+.confirmBox {
+  width: 100%;
+  max-width: 32rem;
+
+  padding: 2.4rem;
+
+  border: 0.1rem solid var(--gray-700);
+  border-radius: 1.2rem;
+
+  background: var(--card-background);
+
+  text-align: center;
+}
+
+.confirmMessage {
+  margin: 0 0 2rem;
+
+  color: var(--text-default);
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.confirmActions {
+  display: flex;
+
+  gap: 1.2rem;
+}
+
+.cancelButton,
+.deleteButton {
+  flex: 1;
+
+  padding: 1.2rem;
+
+  border-radius: 0.8rem;
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease-in-out,
+    border-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+.cancelButton {
+  border: 0.1rem solid var(--gray-600);
+
+  background: var(--gray-800);
+  color: var(--text-default);
+}
+
+.cancelButton:hover {
+  border-color: var(--primary);
+  background: var(--gray-700);
+  color: var(--primary);
+}
+
+.deleteButton {
+  border: none;
+
+  background: var(--error);
+  color: #ffffff;
+}
+
+.deleteButton:hover {
+  filter: brightness(90%);
+}

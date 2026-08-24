@@ -1,0 +1,135 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 2.4rem;
+
+  background: rgba(0, 0, 0, 0.6);
+
+  z-index: 1000;
+}
+
+.modal {
+  width: 100%;
+  max-width: 32rem;
+
+  padding: 2.4rem;
+
+  border: 0.1rem solid var(--gray-700);
+  border-radius: 1.2rem;
+
+  background: var(--card-background);
+}
+
+.modal h2 {
+  margin: 0 0 1.6rem;
+
+  color: var(--text-default);
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.label {
+  display: block;
+
+  margin-bottom: 0.8rem;
+
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.input {
+  width: 100%;
+
+  padding: 1.2rem;
+
+  border: 0.1rem solid var(--gray-600);
+  border-radius: 0.8rem;
+
+  background: var(--gray-800);
+  color: var(--text-default);
+
+  font: inherit;
+  font-size: 1.6rem;
+
+  transition: border-color 0.2s ease-in-out;
+}
+
+.input:focus {
+  outline: none;
+
+  border-color: var(--primary);
+}
+
+.error {
+  margin: 0.8rem 0 0;
+
+  color: var(--error);
+  font-size: 1.3rem;
+}
+
+.confirmButton {
+  width: 100%;
+
+  margin-top: 2.4rem;
+
+  padding: 1.2rem;
+
+  border: none;
+  border-radius: 0.8rem;
+
+  background: var(--primary);
+  color: var(--text-over-primary);
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
+}
+
+.confirmButton:hover {
+  background: var(--primary-light);
+}
+
+.confirmButton:active {
+  transform: scale(0.98);
+}
+
+.backButton {
+  width: 100%;
+
+  margin-top: 1.2rem;
+
+  padding: 1.2rem;
+
+  border: 0.1rem solid var(--gray-600);
+  border-radius: 0.8rem;
+
+  background: var(--gray-800);
+  color: var(--text-default);
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease-in-out,
+    border-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+.backButton:hover {
+  border-color: var(--primary);
+  background: var(--gray-700);
+  color: var(--primary);
+}
