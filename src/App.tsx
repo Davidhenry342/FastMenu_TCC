@@ -8,9 +8,9 @@ import { ProductProvider } from './contexts/ProductContext';
 import { TableProvider } from './contexts/TableContext';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { Cardapio } from './pages/admin/Cardapio';
+import { Cozinha } from './pages/admin/Cozinha';
 import { Funcionarios } from './pages/admin/Funcionarios';
 import { Mesas } from './pages/admin/Mesas';
-import { UnderConstruction } from './pages/admin/UnderConstruction';
 import { Home } from './pages/Home';
 
 export function App() {
@@ -27,10 +27,7 @@ export function App() {
                 <Route path="mesas" element={<Mesas />} />
                 <Route path="funcionarios" element={<Funcionarios />} />
                 <Route path="cardapio" element={<Cardapio />} />
-                <Route
-                  path="cozinha"
-                  element={<UnderConstruction title="Cozinha" />}
-                />
+                <Route path="cozinha" element={<Cozinha />} />
               </Route>
             </Routes>
           </ProductProvider>

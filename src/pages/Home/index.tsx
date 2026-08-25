@@ -7,6 +7,7 @@ import { ProductCard } from '../../components/ProductCard';
 import { ProductModal } from '../../components/ProductModal';
 import { useOrder } from '../../contexts/OrderContext';
 import { useProducts } from '../../contexts/ProductContext';
+import { useTables } from '../../contexts/TableContext';
 import { categories } from '../../data/categories';
 import type { Product } from '../../models/product';
 import styles from './styles.module.css';
@@ -15,8 +16,20 @@ export function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isComandaOpen, setIsComandaOpen] = useState(false);
-  const { addOrderItem } = useOrder();
+  const { addOrderItem, orderItems } = useOrder();
   const { products } = useProducts();
+  const { tables } = useTables();
+
+  // Atribuição automática de mesa: cicla pelas mesas em ordem de número
+  const nextTableNumber = () => {
+    if (tables.length === 0) {
+      return undefined;
+    }
+
+    const sorted = [...tables].sort((a, b) => a.number - b.number);
+
+    return sorted[orderItems.length % sorted.length].number;
+  };
 
   const categoryOrder = new Map(
     categories.map((category, index) => [category.id, index]),
@@ -122,6 +135,7 @@ export function Home() {
               orderedAt: new Date(),
               status: 'Aguardando confirmação',
               observation: observation.trim() || undefined,
+              tableNumber: nextTableNumber(),
             });
             setSelectedProduct(null);
           }}

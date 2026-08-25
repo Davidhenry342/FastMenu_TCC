@@ -1,0 +1,244 @@
+.section {
+  padding: 3.2rem 0 6.4rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 2.4rem;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+
+  color: var(--text-default);
+  font-size: 2.4rem;
+  font-weight: 600;
+}
+
+.pendingCount {
+  color: var(--warning);
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.emptyState {
+  padding: 3.2rem 0;
+
+  color: var(--text-muted);
+  font-size: 1.4rem;
+
+  text-align: center;
+}
+
+.orderGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr));
+
+  gap: 2.4rem;
+}
+
+.orderCard {
+  display: flex;
+  flex-direction: column;
+
+  gap: 1.2rem;
+
+  padding: 1.6rem;
+
+  border: 0.1rem solid var(--gray-700);
+  border-radius: 1.2rem;
+
+  background: var(--card-background);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1.2rem;
+
+  padding-bottom: 1.2rem;
+
+  border-bottom: 0.1rem solid var(--gray-700);
+}
+
+.tableLabel {
+  color: var(--primary-light);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.orderTime {
+  display: flex;
+  align-items: center;
+
+  gap: 0.4rem;
+
+  color: var(--text-muted);
+  font-size: 1.3rem;
+}
+
+.orderTime svg {
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.dish {
+  display: flex;
+  align-items: center;
+
+  gap: 1.2rem;
+}
+
+.thumbnail {
+  width: 5rem;
+  height: 5rem;
+
+  flex-shrink: 0;
+
+  border-radius: 0.8rem;
+
+  object-fit: cover;
+
+  display: block;
+}
+
+.dishInfo {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+}
+
+.dishName {
+  color: var(--text-default);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.quantity {
+  color: var(--primary);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.observation {
+  margin: 0;
+
+  color: var(--text-muted);
+  font-size: 1.3rem;
+  line-height: 1.4;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+
+  gap: 0.6rem;
+
+  color: var(--text-muted);
+  font-size: 1.3rem;
+}
+
+.meta svg {
+  height: 1.5rem;
+  width: 1.5rem;
+
+  flex-shrink: 0;
+}
+
+.footer {
+  display: flex;
+
+  gap: 1.2rem;
+
+  margin-top: auto;
+
+  padding-top: 1.2rem;
+
+  border-top: 0.1rem solid var(--gray-700);
+}
+
+.acceptButton,
+.refuseButton {
+  flex: 1;
+
+  padding: 1rem;
+
+  border-radius: 0.8rem;
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease-in-out,
+    border-color 0.2s ease-in-out,
+    color 0.2s ease-in-out,
+    filter 0.2s ease-in-out;
+}
+
+.acceptButton {
+  border: none;
+
+  background: var(--success);
+  color: #ffffff;
+}
+
+.acceptButton:hover {
+  filter: brightness(90%);
+}
+
+.refuseButton {
+  border: 0.1rem solid var(--error);
+
+  background: transparent;
+  color: var(--error);
+}
+
+.refuseButton:hover {
+  background: var(--error);
+  color: #ffffff;
+}
+
+.statusBadge {
+  flex: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.6rem;
+
+  padding: 1rem;
+
+  border-radius: 0.8rem;
+
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.statusBadge svg {
+  height: 1.8rem;
+  width: 1.8rem;
+}
+
+.acceptedBadge {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+}
+
+.refusedBadge {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error);
+}
+
+.deliveredBadge {
+  background: var(--gray-800);
+  color: var(--text-muted);
+}

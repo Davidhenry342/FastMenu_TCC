@@ -14,4 +14,5 @@ export type OrderItem = {
   status: OrderStatus;
   observation?: string;
   paidQuantity?: number;
+  tableNumber?: number;
 };

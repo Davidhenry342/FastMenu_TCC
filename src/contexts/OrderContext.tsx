@@ -1,6 +1,27 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { OrderItem } from '../models/order';
+
+const ORDERS_STORAGE_KEY = 'fastmenu:orders';
+
+function loadOrders(): OrderItem[] {
+  try {
+    const stored = localStorage.getItem(ORDERS_STORAGE_KEY);
+
+    if (!stored) {
+      return [];
+    }
+
+    const parsed = JSON.parse(stored) as OrderItem[];
+
+    return parsed.map(item => ({
+      ...item,
+      orderedAt: new Date(item.orderedAt),
+    }));
+  } catch {
+    return [];
+  }
+}
 
 type OrderContextValue = {
   orderItems: OrderItem[];
@@ -15,7 +36,11 @@ type OrderProviderProps = {
 };
 
 export function OrderProvider({ children }: OrderProviderProps) {
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [orderItems, setOrderItems] = useState<OrderItem[]>(loadOrders);
+
+  useEffect(() => {
+    localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orderItems));
+  }, [orderItems]);
 
   const addOrderItem = (item: OrderItem) => {
     setOrderItems(current => [...current, item]);
