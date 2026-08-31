@@ -124,6 +124,12 @@
   filter: brightness(45%);
 }
 
+.itemCancelled {
+  cursor: default;
+
+  filter: grayscale(60%) brightness(65%);
+}
+
 .partiallyPaid {
   color: var(--text-muted);
   font-size: 1.2rem;

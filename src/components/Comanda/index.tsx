@@ -38,15 +38,24 @@ export function Comanda({ onClose }: ComandaProps) {
   const getRemaining = (item: OrderItem) =>
     item.quantity - (item.paidQuantity ?? 0);
 
-  const total = orderItems.reduce(
-    (sum, item) => sum + item.product.price * getRemaining(item),
-    0,
-  );
+  const isCancelled = (item: OrderItem) => item.status === 'Cancelado';
+
+  const total = orderItems.reduce((sum, item) => {
+    if (isCancelled(item)) {
+      return sum;
+    }
+
+    return sum + item.product.price * getRemaining(item);
+  }, 0);
 
   const selectedSubtotal = orderItems.reduce((sum, item) => {
     const qty = selections[item.id];
 
-    return qty ? sum + item.product.price * qty : sum;
+    if (!qty || isCancelled(item)) {
+      return sum;
+    }
+
+    return sum + item.product.price * qty;
   }, 0);
 
   const hasSelection = Object.keys(selections).length > 0;
@@ -76,7 +85,7 @@ export function Comanda({ onClose }: ComandaProps) {
     Object.entries(selections).forEach(([id, qty]) => {
       const item = orderItems.find(orderItem => orderItem.id === id);
 
-      if (!item) {
+      if (!item || isCancelled(item)) {
         return;
       }
 
@@ -121,15 +130,17 @@ export function Comanda({ onClose }: ComandaProps) {
               const paid = item.paidQuantity ?? 0;
               const remaining = getRemaining(item);
               const isPaid = remaining === 0;
+              const cancelled = isCancelled(item);
+              const isLocked = isPaid || cancelled;
               const isSelected = Boolean(selections[item.id]);
 
               return (
                 <li
                   key={item.id}
                   className={`${styles.item} ${isPaid ? styles.itemPaid : ''} ${
-                    isSelected ? styles.itemSelected : ''
-                  }`}
-                  onClick={isPaid ? undefined : () => toggleSelection(item.id)}
+                    cancelled ? styles.itemCancelled : ''
+                  } ${isSelected && !isLocked ? styles.itemSelected : ''}`}
+                  onClick={isLocked ? undefined : () => toggleSelection(item.id)}
                 >
                   <img
                     src={item.product.imageUrl ?? DefaultProductImage}
@@ -179,7 +190,7 @@ export function Comanda({ onClose }: ComandaProps) {
                       </p>
                     )}
 
-                    {!isPaid && isSelected && (
+                    {!isLocked && isSelected && (
                       <div
                         className={styles.qtySelector}
                         onClick={event => event.stopPropagation()}
