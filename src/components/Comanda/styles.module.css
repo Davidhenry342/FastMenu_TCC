@@ -130,6 +130,18 @@
   filter: grayscale(60%) brightness(65%);
 }
 
+.itemAwaiting {
+  cursor: not-allowed;
+
+  opacity: 0.7;
+}
+
+.customerName {
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
 .partiallyPaid {
   color: var(--text-muted);
   font-size: 1.2rem;

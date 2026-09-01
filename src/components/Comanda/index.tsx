@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle, Minus, Plus, X } from 'lucide-react';
+import { useCustomers } from '../../contexts/CustomerContext';
 import { useOrder } from '../../contexts/OrderContext';
 import type { OrderItem, OrderStatus } from '../../models/order';
 import { FormatCurrency, FormatTime } from '../../utils/format';
@@ -19,6 +20,7 @@ const statusClass: Record<OrderStatus, string> = {
 
 export function Comanda({ onClose }: ComandaProps) {
   const { orderItems, updateOrderItem } = useOrder();
+  const { customers } = useCustomers();
 
   // itemId -> quantidade que o usuário quer pagar deste item
   const [selections, setSelections] = useState<Record<string, number>>({});
@@ -39,9 +41,22 @@ export function Comanda({ onClose }: ComandaProps) {
     item.quantity - (item.paidQuantity ?? 0);
 
   const isCancelled = (item: OrderItem) => item.status === 'Cancelado';
+  const isAwaiting = (item: OrderItem) =>
+    item.status === 'Aguardando confirmação';
+
+  const getCustomerName = (customerId?: string) => {
+    if (!customerId) {
+      return 'Cliente não identificado';
+    }
+
+    return (
+      customers.find(customer => customer.id === customerId)?.name ??
+      'Cliente não identificado'
+    );
+  };
 
   const total = orderItems.reduce((sum, item) => {
-    if (isCancelled(item)) {
+    if (isCancelled(item) || isAwaiting(item)) {
       return sum;
     }
 
@@ -51,7 +66,7 @@ export function Comanda({ onClose }: ComandaProps) {
   const selectedSubtotal = orderItems.reduce((sum, item) => {
     const qty = selections[item.id];
 
-    if (!qty || isCancelled(item)) {
+    if (!qty || isCancelled(item) || isAwaiting(item)) {
       return sum;
     }
 
@@ -85,7 +100,7 @@ export function Comanda({ onClose }: ComandaProps) {
     Object.entries(selections).forEach(([id, qty]) => {
       const item = orderItems.find(orderItem => orderItem.id === id);
 
-      if (!item || isCancelled(item)) {
+      if (!item || isCancelled(item) || isAwaiting(item)) {
         return;
       }
 
@@ -131,7 +146,8 @@ export function Comanda({ onClose }: ComandaProps) {
               const remaining = getRemaining(item);
               const isPaid = remaining === 0;
               const cancelled = isCancelled(item);
-              const isLocked = isPaid || cancelled;
+              const awaiting = isAwaiting(item);
+              const isLocked = isPaid || cancelled || awaiting;
               const isSelected = Boolean(selections[item.id]);
 
               return (
@@ -139,7 +155,9 @@ export function Comanda({ onClose }: ComandaProps) {
                   key={item.id}
                   className={`${styles.item} ${isPaid ? styles.itemPaid : ''} ${
                     cancelled ? styles.itemCancelled : ''
-                  } ${isSelected && !isLocked ? styles.itemSelected : ''}`}
+                  } ${awaiting ? styles.itemAwaiting : ''} ${
+                    isSelected && !isLocked ? styles.itemSelected : ''
+                  }`}
                   onClick={isLocked ? undefined : () => toggleSelection(item.id)}
                 >
                   <img
@@ -149,6 +167,10 @@ export function Comanda({ onClose }: ComandaProps) {
                   />
 
                   <div className={styles.itemInfo}>
+                    <span className={styles.customerName}>
+                      Pedido por: {getCustomerName(item.customerId)}
+                    </span>
+
                     <div className={styles.itemHeader}>
                       <span className={styles.itemName}>
                         {item.product.name}
