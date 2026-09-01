@@ -81,3 +81,39 @@
   background: var(--gray-900);
   color: var(--primary-light);
 }
+
+.logoutButton {
+  display: flex;
+  align-items: center;
+
+  gap: 0.6rem;
+
+  padding: 0.8rem 1.6rem;
+
+  border: 0.1rem solid var(--text-logo);
+  border-radius: 0.8rem;
+
+  background: transparent;
+  color: var(--text-logo);
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease-in-out,
+    color 0.2s ease-in-out,
+    border-color 0.2s ease-in-out;
+}
+
+.logoutButton:hover {
+  background: var(--gray-900);
+  border-color: var(--gray-900);
+  color: var(--primary-light);
+}
+
+.logoutButton svg {
+  height: 1.6rem;
+  width: 1.6rem;
+}

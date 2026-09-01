@@ -1,5 +1,7 @@
-import { NavLink } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { ContainerHead } from '../ContainerHead';
+import { useEmployees } from '../../contexts/EmployeeContext';
 import styles from './styles.module.css';
 
 const navItems = [
@@ -14,6 +16,14 @@ type AdminHeaderProps = {
 };
 
 export function AdminHeader({ restaurantName }: AdminHeaderProps) {
+  const navigate = useNavigate();
+  const { logout } = useEmployees();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/admin/login');
+  };
+
   return (
     <header className={styles.header}>
       <ContainerHead>
@@ -38,6 +48,16 @@ export function AdminHeader({ restaurantName }: AdminHeaderProps) {
                 {item.label}
               </NavLink>
             ))}
+
+            <button
+              type="button"
+              className={styles.logoutButton}
+              onClick={handleLogout}
+              aria-label="Sair da área do administrador"
+            >
+              <LogOut />
+              Sair
+            </button>
           </nav>
         </div>
       </ContainerHead>

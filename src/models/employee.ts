@@ -14,4 +14,6 @@ export type Employee = {
   phone: string;
   address: string;
   role: EmployeeRole;
+  email: string;
+  password: string;
 };

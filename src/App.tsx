@@ -8,6 +8,7 @@ import { OrderProvider } from './contexts/OrderContext';
 import { ProductProvider } from './contexts/ProductContext';
 import { TableProvider } from './contexts/TableContext';
 import { AdminLayout } from './pages/admin/AdminLayout';
+import { AdminLogin } from './pages/admin/AdminLogin';
 import { Cardapio } from './pages/admin/Cardapio';
 import { Cozinha } from './pages/admin/Cozinha';
 import { Funcionarios } from './pages/admin/Funcionarios';
@@ -22,9 +23,10 @@ export function App() {
         <TableProvider>
           <EmployeeProvider>
             <ProductProvider>
-              <Routes>
-                <Route path="/" element={<Login />} />
-                <Route path="/cardapio" element={<Home />} />
+            <Routes>
+              <Route path="/" element={<Login />} />
+              <Route path="/cardapio" element={<Home />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
 
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<Navigate to="mesas" replace />} />
@@ -33,7 +35,7 @@ export function App() {
                 <Route path="cardapio" element={<Cardapio />} />
                 <Route path="cozinha" element={<Cozinha />} />
               </Route>
-              </Routes>
+            </Routes>
             </ProductProvider>
           </EmployeeProvider>
         </TableProvider>

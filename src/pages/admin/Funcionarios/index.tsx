@@ -25,10 +25,16 @@ export function Funcionarios() {
   );
 
   const takenCpfs = employees.map(employee => employee.cpf);
+  const takenEmails = employees.map(employee => employee.email);
   const editTakenCpfs = editingEmployee
     ? employees
         .filter(employee => employee.id !== editingEmployee.id)
         .map(employee => employee.cpf)
+    : [];
+  const editTakenEmails = editingEmployee
+    ? employees
+        .filter(employee => employee.id !== editingEmployee.id)
+        .map(employee => employee.email)
     : [];
 
   const handleCreate = (data: Omit<Employee, 'id'>) => {
@@ -93,6 +99,7 @@ export function Funcionarios() {
                 <tr>
                   <th>CPF</th>
                   <th>Nome</th>
+                  <th>E-mail</th>
                   <th>Telefone</th>
                   <th>Endereço</th>
                   <th>Cargo</th>
@@ -105,6 +112,7 @@ export function Funcionarios() {
                   <tr key={employee.id} className={styles.row}>
                     <td>{employee.cpf}</td>
                     <td>{employee.name}</td>
+                    <td>{employee.email}</td>
                     <td>{employee.phone}</td>
                     <td>{employee.address}</td>
                     <td>
@@ -141,6 +149,7 @@ export function Funcionarios() {
         <EmployeeFormModal
           title="Novo funcionário"
           takenCpfs={takenCpfs}
+          takenEmails={takenEmails}
           onSubmit={handleCreate}
           onClose={() => setIsCreateOpen(false)}
         />
@@ -151,6 +160,7 @@ export function Funcionarios() {
           title={`Editar ${editingEmployee.name}`}
           initialEmployee={editingEmployee}
           takenCpfs={editTakenCpfs}
+          takenEmails={editTakenEmails}
           onSubmit={handleEdit}
           onClose={() => setEditingEmployee(null)}
         />

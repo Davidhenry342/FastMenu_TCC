@@ -8,6 +8,8 @@ export const employees: Employee[] = [
     phone: '(11) 98888-1111',
     address: 'Rua das Flores, 123 - São Paulo/SP',
     role: 'Garçom',
+    email: 'ana.souza@fastmenu.com',
+    password: '123456',
   },
   {
     id: '2',
@@ -16,6 +18,8 @@ export const employees: Employee[] = [
     phone: '(11) 97777-2222',
     address: 'Av. Paulista, 1000 - São Paulo/SP',
     role: 'Cozinheiro(a)',
+    email: 'bruno.lima@fastmenu.com',
+    password: '123456',
   },
   {
     id: '3',
@@ -24,6 +28,8 @@ export const employees: Employee[] = [
     phone: '(21) 96666-3333',
     address: 'Rua do Comércio, 45 - Rio de Janeiro/RJ',
     role: 'Caixa',
+    email: 'carla.mendes@fastmenu.com',
+    password: '123456',
   },
   {
     id: '4',
@@ -32,6 +38,8 @@ export const employees: Employee[] = [
     phone: '(31) 95555-4444',
     address: 'Rua da Alegria, 789 - Belo Horizonte/MG',
     role: 'Gerente',
+    email: 'diego.ferreira@fastmenu.com',
+    password: '123456',
   },
   {
     id: '5',
@@ -40,5 +48,7 @@ export const employees: Employee[] = [
     phone: '(41) 94444-5555',
     address: 'Travessa Verde, 12 - Curitiba/PR',
     role: 'Garçom',
+    email: 'elisa.costa@fastmenu.com',
+    password: '123456',
   },
 ];

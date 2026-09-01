@@ -10,6 +10,7 @@ type EmployeeFormModalProps = {
   title: string;
   initialEmployee?: Employee;
   takenCpfs: string[];
+  takenEmails: string[];
   onSubmit: (employee: EmployeeFormData) => void;
   onClose: () => void;
 };
@@ -18,6 +19,7 @@ export function EmployeeFormModal({
   title,
   initialEmployee,
   takenCpfs,
+  takenEmails,
   onSubmit,
   onClose,
 }: EmployeeFormModalProps) {
@@ -25,6 +27,8 @@ export function EmployeeFormModal({
   const [name, setName] = useState(initialEmployee?.name ?? '');
   const [phone, setPhone] = useState(initialEmployee?.phone ?? '');
   const [address, setAddress] = useState(initialEmployee?.address ?? '');
+  const [email, setEmail] = useState(initialEmployee?.email ?? '');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<EmployeeRole | ''>(
     initialEmployee?.role ?? '',
   );
@@ -43,7 +47,13 @@ export function EmployeeFormModal({
   }, [onClose]);
 
   const handleSubmit = () => {
-    if (!cpf.trim() || !name.trim() || !phone.trim() || !address.trim()) {
+    if (
+      !cpf.trim() ||
+      !name.trim() ||
+      !phone.trim() ||
+      !address.trim() ||
+      !email.trim()
+    ) {
       setError('Preencha todos os campos.');
 
       return;
@@ -51,6 +61,20 @@ export function EmployeeFormModal({
 
     if (!role) {
       setError('Selecione o cargo.');
+
+      return;
+    }
+
+    const isCreating = !initialEmployee;
+
+    if (isCreating && !password.trim()) {
+      setError('Informe a senha.');
+
+      return;
+    }
+
+    if (password.trim() && password.trim().length < 6) {
+      setError('A senha deve ter pelo menos 6 caracteres.');
 
       return;
     }
@@ -71,6 +95,21 @@ export function EmployeeFormModal({
       return;
     }
 
+    const emailTrimmed = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(emailTrimmed)) {
+      setError('Informe um e-mail válido.');
+
+      return;
+    }
+
+    if (takenEmails.includes(emailTrimmed)) {
+      setError('Já existe um funcionário com esse e-mail.');
+
+      return;
+    }
+
     const phoneDigits = phone.replace(/\D/g, '');
 
     if (phoneDigits.length < 10 || phoneDigits.length > 11) {
@@ -84,6 +123,11 @@ export function EmployeeFormModal({
       name: name.trim(),
       phone: FormatPhone(phoneDigits),
       address: address.trim(),
+      email: emailTrimmed,
+      // Na edição, senha vazia mantém a anterior (tratado no caller)
+      password: password.trim()
+        ? password.trim()
+        : (initialEmployee?.password ?? ''),
       role,
     });
   };
@@ -134,6 +178,42 @@ export function EmployeeFormModal({
               setError(null);
             }}
             placeholder="Nome completo"
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="employee-email" className={styles.label}>
+            E-mail
+          </label>
+
+          <input
+            id="employee-email"
+            type="email"
+            className={styles.input}
+            value={email}
+            onChange={event => {
+              setEmail(event.target.value);
+              setError(null);
+            }}
+            placeholder="funcionario@fastmenu.com"
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="employee-password" className={styles.label}>
+            Senha {initialEmployee ? '(deixe em branco para manter)' : ''}
+          </label>
+
+          <input
+            id="employee-password"
+            type="password"
+            className={styles.input}
+            value={password}
+            onChange={event => {
+              setPassword(event.target.value);
+              setError(null);
+            }}
+            placeholder="Mínimo 6 caracteres"
           />
         </div>
 

@@ -1,0 +1,135 @@
+.page {
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 3.2rem 0;
+
+  background: var(--gray-800);
+}
+
+.card {
+  width: 100%;
+  max-width: 40rem;
+
+  padding: 2.4rem;
+
+  border: 0.1rem solid var(--gray-700);
+  border-radius: 1.2rem;
+
+  background: var(--card-background);
+}
+
+.title {
+  margin: 0 0 0.8rem;
+
+  color: var(--text-default);
+  font-size: 2.4rem;
+  font-weight: 700;
+
+  text-align: center;
+}
+
+.subtitle {
+  margin: 0 0 2.4rem;
+
+  color: var(--text-muted);
+  font-size: 1.4rem;
+
+  text-align: center;
+}
+
+.label {
+  display: block;
+
+  margin-bottom: 0.8rem;
+
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.input {
+  width: 100%;
+
+  margin-bottom: 1.6rem;
+  padding: 1.2rem;
+
+  border: 0.1rem solid var(--gray-600);
+  border-radius: 0.8rem;
+
+  background: var(--gray-800);
+  color: var(--text-default);
+
+  font: inherit;
+  font-size: 1.4rem;
+
+  transition: border-color 0.2s ease-in-out;
+}
+
+.input:focus {
+  outline: none;
+
+  border-color: var(--primary);
+}
+
+.error {
+  margin: 0 0 1.6rem;
+
+  color: var(--error);
+  font-size: 1.3rem;
+
+  text-align: center;
+}
+
+.primaryButton {
+  width: 100%;
+
+  padding: 1.2rem;
+
+  border: none;
+  border-radius: 0.8rem;
+
+  background: var(--primary);
+  color: var(--text-over-primary);
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
+}
+
+.primaryButton:hover {
+  background: var(--primary-light);
+}
+
+.primaryButton:active {
+  transform: scale(0.98);
+}
+
+.linkButton {
+  width: 100%;
+
+  margin-top: 1.2rem;
+
+  border: none;
+
+  background: transparent;
+  color: var(--text-muted);
+
+  font-size: 1.3rem;
+
+  cursor: pointer;
+
+  text-decoration: underline;
+}
+
+.linkButton:hover {
+  color: var(--text-default);
+}
