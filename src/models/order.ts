@@ -15,4 +15,5 @@ export type OrderItem = {
   observation?: string;
   paidQuantity?: number;
   tableNumber?: number;
+  customerId?: string;
 };

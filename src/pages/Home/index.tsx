@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Comanda } from '../../components/Comanda';
 import { Container } from '../../components/Container';
 import { DefaultButton } from '../../components/DefaultButton';
 import { Header } from '../../components/Header';
 import { ProductCard } from '../../components/ProductCard';
 import { ProductModal } from '../../components/ProductModal';
+import { useCustomers } from '../../contexts/CustomerContext';
 import { useOrder } from '../../contexts/OrderContext';
 import { useProducts } from '../../contexts/ProductContext';
 import { useTables } from '../../contexts/TableContext';
@@ -13,12 +15,20 @@ import type { Product } from '../../models/product';
 import styles from './styles.module.css';
 
 export function Home() {
+  const navigate = useNavigate();
+  const { currentCustomer } = useCustomers();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isComandaOpen, setIsComandaOpen] = useState(false);
   const { addOrderItem, orderItems } = useOrder();
   const { products } = useProducts();
   const { tables } = useTables();
+
+  useEffect(() => {
+    if (!currentCustomer) {
+      navigate('/', { replace: true });
+    }
+  }, [currentCustomer, navigate]);
 
   // Atribuição automática de mesa: cicla pelas mesas em ordem de número
   const nextTableNumber = () => {
@@ -35,9 +45,10 @@ export function Home() {
     categories.map((category, index) => [category.id, index]),
   );
 
-  const visibleProducts = (selectedCategory
-    ? products.filter(product => product.categoryId === selectedCategory)
-    : [...products]
+  const visibleProducts = (
+    selectedCategory
+      ? products.filter(product => product.categoryId === selectedCategory)
+      : [...products]
   ).sort(
     (a, b) =>
       (categoryOrder.get(a.categoryId) ?? Number.POSITIVE_INFINITY) -
@@ -48,10 +59,14 @@ export function Home() {
     categories.find(category => category.id === selectedCategory)?.name ??
     'Destaques';
 
+  if (!currentCustomer) {
+    return null;
+  }
+
   return (
     <>
       <Header
-        restaurantName="Fast Menu restaurante"
+        restaurantName="Fast Menu Restaurante"
         onCartClick={() => setIsComandaOpen(true)}
       />
 
@@ -59,7 +74,9 @@ export function Home() {
         <Container>
           <section className={styles.hero}>
             <div className={styles.heroContent}>
-              <span className={styles.eyeBrow}>Bem Vindo!</span>
+              <span className={styles.eyeBrow}>
+                Bem Vindo! {currentCustomer.name}
+              </span>
 
               <h1>Nosso Cardápio</h1>
 
@@ -136,6 +153,7 @@ export function Home() {
               status: 'Aguardando confirmação',
               observation: observation.trim() || undefined,
               tableNumber: nextTableNumber(),
+              customerId: currentCustomer.id,
             });
             setSelectedProduct(null);
           }}
