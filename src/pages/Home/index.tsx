@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Comanda } from '../../components/Comanda';
 import { Container } from '../../components/Container';
@@ -12,6 +12,7 @@ import { useProducts } from '../../contexts/ProductContext';
 import { useTables } from '../../contexts/TableContext';
 import { categories } from '../../data/categories';
 import type { Product } from '../../models/product';
+import { averageWaitByCategory } from '../../utils/waitTime';
 import styles from './styles.module.css';
 
 export function Home() {
@@ -40,6 +41,14 @@ export function Home() {
 
     return sorted[orderItems.length % sorted.length].number;
   };
+
+  const averageWait = useMemo(
+    () => averageWaitByCategory(orderItems),
+    [orderItems],
+  );
+
+  const waitFor = (categoryId: string, fallback: number) =>
+    averageWait.get(categoryId) ?? fallback;
 
   const categoryOrder = new Map(
     categories.map((category, index) => [category.id, index]),
@@ -129,6 +138,10 @@ export function Home() {
                     key={product.id}
                     product={product}
                     categoryName={categoryName}
+                    estimatedWaitTime={waitFor(
+                      product.categoryId,
+                      product.preparationTime,
+                    )}
                     onAdd={setSelectedProduct}
                   />
                 );

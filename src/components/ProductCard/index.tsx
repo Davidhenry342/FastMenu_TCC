@@ -6,10 +6,16 @@ import styles from './styles.module.css';
 type ProductCardProps = {
   product: Product;
   categoryName?: string;
+  estimatedWaitTime?: number;
   onAdd?: (product: Product) => void;
 };
 
-export function ProductCard({ product, categoryName, onAdd }: ProductCardProps) {
+export function ProductCard({
+  product,
+  categoryName,
+  estimatedWaitTime,
+  onAdd,
+}: ProductCardProps) {
   const imageUrl = product.imageUrl ?? DefaultProductImage;
 
   return (
@@ -32,8 +38,11 @@ export function ProductCard({ product, categoryName, onAdd }: ProductCardProps) 
         <div className={styles.details}>
           <span className={styles.price}>{FormatCurrency(product.price)}</span>
 
-          <span className={styles.preparationTime}>
-            {product.preparationTime} min
+          <span
+            className={styles.preparationTime}
+            title="Tempo médio da fila"
+          >
+            {(estimatedWaitTime ?? product.preparationTime)} min
           </span>
         </div>
 
