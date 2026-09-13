@@ -97,6 +97,7 @@
 
 .item {
   display: flex;
+  position: relative;
 
   gap: 1.6rem;
 
@@ -112,6 +113,39 @@
   transition:
     filter 0.2s ease-in-out,
     border-color 0.2s ease-in-out;
+}
+
+.deleteOrderButton {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.8rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0.4rem;
+
+  border: none;
+  border-radius: 0.6rem;
+
+  background: rgba(13, 17, 27, 0.7);
+  color: #ffffff;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+.deleteOrderButton:hover {
+  background: rgba(239, 68, 68, 0.9);
+}
+
+.deleteOrderButton svg {
+  height: 1.6rem;
+  width: 1.6rem;
 }
 
 .itemSelected {

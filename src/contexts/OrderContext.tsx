@@ -27,6 +27,7 @@ type OrderContextValue = {
   orderItems: OrderItem[];
   addOrderItem: (item: OrderItem) => void;
   updateOrderItem: (id: string, changes: Partial<OrderItem>) => void;
+  deleteOrderItem: (id: string) => void;
 };
 
 const OrderContext = createContext<OrderContextValue | null>(null);
@@ -52,8 +53,14 @@ export function OrderProvider({ children }: OrderProviderProps) {
     );
   };
 
+  const deleteOrderItem = (id: string) => {
+    setOrderItems(current => current.filter(item => item.id !== id));
+  };
+
   return (
-    <OrderContext.Provider value={{ orderItems, addOrderItem, updateOrderItem }}>
+    <OrderContext.Provider
+      value={{ orderItems, addOrderItem, updateOrderItem, deleteOrderItem }}
+    >
       {children}
     </OrderContext.Provider>
   );

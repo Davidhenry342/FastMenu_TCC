@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
+import { Comanda } from '../../../components/Comanda';
 import { Container } from '../../../components/Container';
 import { DefaultButton } from '../../../components/DefaultButton';
 import { TableFormModal } from '../../../components/TableFormModal';
@@ -13,14 +14,11 @@ export function Mesas() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
   const [deletingTable, setDeletingTable] = useState<Table | null>(null);
+  const [comandaTableNumber, setComandaTableNumber] = useState<number | null>(
+    null,
+  );
 
   const sortedTables = [...tables].sort((a, b) => a.number - b.number);
-
-  const toggleStatus = (table: Table) => {
-    updateTable(table.id, {
-      status: table.status === 'Disponível' ? 'Ocupada' : 'Disponível',
-    });
-  };
 
   const takenNumbers = tables.map(table => table.number);
   const editTakenNumbers = editingTable
@@ -92,7 +90,7 @@ export function Mesas() {
                       ? styles.available
                       : styles.occupied
                   }`}
-                  onClick={() => toggleStatus(table)}
+                  onClick={() => setComandaTableNumber(table.number)}
                   role="button"
                   tabIndex={0}
                 >
@@ -183,6 +181,14 @@ export function Mesas() {
             </div>
           </div>
         </div>
+      )}
+
+      {comandaTableNumber !== null && (
+        <Comanda
+          tableNumber={comandaTableNumber}
+          canDelete
+          onClose={() => setComandaTableNumber(null)}
+        />
       )}
     </>
   );

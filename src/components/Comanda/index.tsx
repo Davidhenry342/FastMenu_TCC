@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, Minus, Plus, X } from 'lucide-react';
+import { CheckCircle, Minus, Plus, Trash2, X } from 'lucide-react';
+import { useComandas } from '../../contexts/ComandaContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useOrder } from '../../contexts/OrderContext';
+import { useTables } from '../../contexts/TableContext';
 import type { OrderItem, OrderStatus } from '../../models/order';
 import { FormatCurrency, FormatTime } from '../../utils/format';
 import { DefaultProductImage } from '../../utils/imageDefault';
@@ -9,6 +11,8 @@ import styles from './styles.module.css';
 
 type ComandaProps = {
   onClose: () => void;
+  tableNumber?: number;
+  canDelete?: boolean;
 };
 
 const statusClass: Record<OrderStatus, string> = {
@@ -18,9 +22,16 @@ const statusClass: Record<OrderStatus, string> = {
   Entregue: styles.statusEntregue,
 };
 
-export function Comanda({ onClose }: ComandaProps) {
-  const { orderItems, updateOrderItem } = useOrder();
+export function Comanda({
+  onClose,
+  tableNumber: filterTableNumber,
+  canDelete = false,
+}: ComandaProps) {
+  const { orderItems, updateOrderItem, deleteOrderItem } = useOrder();
   const { customers } = useCustomers();
+  const { tables, updateTable } = useTables();
+  const { getOpenComandaByTable, closeComanda, removeOrderFromComandas } =
+    useComandas();
 
   // itemId -> quantidade que o usuário quer pagar deste item
   const [selections, setSelections] = useState<Record<string, number>>({});
@@ -55,7 +66,12 @@ export function Comanda({ onClose }: ComandaProps) {
     );
   };
 
-  const total = orderItems.reduce((sum, item) => {
+  const displayedItems =
+    filterTableNumber !== undefined
+      ? orderItems.filter(item => item.tableNumber === filterTableNumber)
+      : orderItems;
+
+  const total = displayedItems.reduce((sum, item) => {
     if (isCancelled(item) || isAwaiting(item)) {
       return sum;
     }
@@ -63,7 +79,7 @@ export function Comanda({ onClose }: ComandaProps) {
     return sum + item.product.price * getRemaining(item);
   }, 0);
 
-  const selectedSubtotal = orderItems.reduce((sum, item) => {
+  const selectedSubtotal = displayedItems.reduce((sum, item) => {
     const qty = selections[item.id];
 
     if (!qty || isCancelled(item) || isAwaiting(item)) {
@@ -97,6 +113,8 @@ export function Comanda({ onClose }: ComandaProps) {
   };
 
   const handlePay = () => {
+    const updatedItems = new Map<string, OrderItem>();
+
     Object.entries(selections).forEach(([id, qty]) => {
       const item = orderItems.find(orderItem => orderItem.id === id);
 
@@ -104,12 +122,66 @@ export function Comanda({ onClose }: ComandaProps) {
         return;
       }
 
-      updateOrderItem(id, {
-        paidQuantity: (item.paidQuantity ?? 0) + qty,
-      });
+      if (
+        filterTableNumber !== undefined &&
+        item.tableNumber !== filterTableNumber
+      ) {
+        return;
+      }
+
+      const nextPaid = (item.paidQuantity ?? 0) + qty;
+
+      updateOrderItem(id, { paidQuantity: nextPaid });
+      updatedItems.set(id, { ...item, paidQuantity: nextPaid });
     });
 
     setSelections({});
+
+    // Se todos os itens pagáveis da mesa foram pagos, fecha a comanda e libera a mesa
+    const targetTableNumber = filterTableNumber ?? 1;
+    const openComanda = getOpenComandaByTable(targetTableNumber);
+
+    if (!openComanda) {
+      return;
+    }
+
+    const remainingForTable = orderItems.reduce((sum, item) => {
+      if (item.tableNumber !== targetTableNumber) {
+        return sum;
+      }
+
+      if (isCancelled(item) || isAwaiting(item)) {
+        return sum;
+      }
+
+      const paid = updatedItems.has(item.id)
+        ? (updatedItems.get(item.id)?.paidQuantity ?? 0)
+        : (item.paidQuantity ?? 0);
+
+      return sum + (item.quantity - paid);
+    }, 0);
+
+    if (remainingForTable === 0) {
+      closeComanda(openComanda.id);
+
+      const table = tables.find(entry => entry.number === targetTableNumber);
+
+      if (table) {
+        updateTable(table.id, { status: 'Disponível' });
+      }
+    }
+  };
+
+  const handleDeleteOrder = (id: string) => {
+    deleteOrderItem(id);
+    removeOrderFromComandas(id);
+    setSelections(current => {
+      const next = { ...current };
+
+      delete next[id];
+
+      return next;
+    });
   };
 
   const formatObservation = (item: OrderItem) => item.observation?.trim();
@@ -124,7 +196,9 @@ export function Comanda({ onClose }: ComandaProps) {
         onClick={event => event.stopPropagation()}
       >
         <div className={styles.header}>
-          <h2 id="comanda-title">Comanda</h2>
+          <h2 id="comanda-title">
+            Comanda{filterTableNumber ? ` - Mesa ${filterTableNumber}` : ''}
+          </h2>
 
           <button
             type="button"
@@ -136,11 +210,11 @@ export function Comanda({ onClose }: ComandaProps) {
           </button>
         </div>
 
-        {orderItems.length === 0 ? (
+        {displayedItems.length === 0 ? (
           <p className={styles.emptyState}>Nenhum item adicionado ainda.</p>
         ) : (
           <ul className={styles.itemList}>
-            {orderItems.map(item => {
+            {displayedItems.map(item => {
               const observation = formatObservation(item);
               const paid = item.paidQuantity ?? 0;
               const remaining = getRemaining(item);
@@ -252,6 +326,20 @@ export function Comanda({ onClose }: ComandaProps) {
                     <span className={styles.itemSubtotal}>
                       {FormatCurrency(item.product.price * item.quantity)}
                     </span>
+
+                    {canDelete && (
+                      <button
+                        type="button"
+                        className={styles.deleteOrderButton}
+                        aria-label={`Excluir pedido ${item.product.name}`}
+                        onClick={event => {
+                          event.stopPropagation();
+                          handleDeleteOrder(item.id);
+                        }}
+                      >
+                        <Trash2 />
+                      </button>
+                    )}
                   </div>
                 </li>
               );

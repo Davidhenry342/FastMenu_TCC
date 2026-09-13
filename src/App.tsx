@@ -2,6 +2,7 @@ import './styles/global.css';
 import './styles/theme.css';
 
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { ComandaProvider } from './contexts/ComandaContext';
 import { CustomerProvider } from './contexts/CustomerContext';
 import { EmployeeProvider } from './contexts/EmployeeContext';
 import { OrderProvider } from './contexts/OrderContext';
@@ -19,11 +20,12 @@ import { Login } from './pages/Login';
 export function App() {
   return (
     <CustomerProvider>
-      <OrderProvider>
-        <TableProvider>
-          <EmployeeProvider>
-            <ProductProvider>
-            <Routes>
+      <ComandaProvider>
+        <OrderProvider>
+          <TableProvider>
+            <EmployeeProvider>
+              <ProductProvider>
+                <Routes>
               <Route path="/" element={<Login />} />
               <Route path="/cardapio" element={<Home />} />
               <Route path="/admin/login" element={<AdminLogin />} />
@@ -35,11 +37,12 @@ export function App() {
                 <Route path="cardapio" element={<Cardapio />} />
                 <Route path="cozinha" element={<Cozinha />} />
               </Route>
-            </Routes>
-            </ProductProvider>
-          </EmployeeProvider>
-        </TableProvider>
-      </OrderProvider>
+                </Routes>
+              </ProductProvider>
+            </EmployeeProvider>
+          </TableProvider>
+        </OrderProvider>
+      </ComandaProvider>
     </CustomerProvider>
   );
 }

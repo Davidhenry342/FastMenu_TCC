@@ -6,6 +6,7 @@ import { DefaultButton } from '../../components/DefaultButton';
 import { Header } from '../../components/Header';
 import { ProductCard } from '../../components/ProductCard';
 import { ProductModal } from '../../components/ProductModal';
+import { useComandas } from '../../contexts/ComandaContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useOrder } from '../../contexts/OrderContext';
 import { useProducts } from '../../contexts/ProductContext';
@@ -23,24 +24,15 @@ export function Home() {
   const [isComandaOpen, setIsComandaOpen] = useState(false);
   const { addOrderItem, orderItems } = useOrder();
   const { products } = useProducts();
-  const { tables } = useTables();
+  const { tables, updateTable } = useTables();
+  const { openComanda, addOrderToComanda, getOpenComandaByTable } =
+    useComandas();
 
   useEffect(() => {
     if (!currentCustomer) {
       navigate('/', { replace: true });
     }
   }, [currentCustomer, navigate]);
-
-  // Atribuição automática de mesa: cicla pelas mesas em ordem de número
-  const nextTableNumber = () => {
-    if (tables.length === 0) {
-      return undefined;
-    }
-
-    const sorted = [...tables].sort((a, b) => a.number - b.number);
-
-    return sorted[orderItems.length % sorted.length].number;
-  };
 
   const averageWait = useMemo(
     () => averageWaitByCategory(orderItems),
@@ -158,16 +150,40 @@ export function Home() {
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
           onConfirm={(product, quantity, observation) => {
+            const tableNumber = 1;
+            const table = tables.find(entry => entry.number === tableNumber);
+
+            if (!table) {
+              return;
+            }
+
+            const orderId = crypto.randomUUID();
+
             addOrderItem({
-              id: crypto.randomUUID(),
+              id: orderId,
               product,
               quantity,
               orderedAt: new Date(),
               status: 'Aguardando confirmação',
               observation: observation.trim() || undefined,
-              tableNumber: nextTableNumber(),
+              tableNumber,
               customerId: currentCustomer.id,
             });
+
+            if (table.status !== 'Ocupada') {
+              updateTable(table.id, { status: 'Ocupada' });
+            }
+
+            const existingComanda = getOpenComandaByTable(tableNumber);
+
+            if (existingComanda) {
+              addOrderToComanda(existingComanda.id, orderId);
+            } else {
+              const newComanda = openComanda(table.id, tableNumber);
+
+              addOrderToComanda(newComanda.id, orderId);
+            }
+
             setSelectedProduct(null);
           }}
         />
