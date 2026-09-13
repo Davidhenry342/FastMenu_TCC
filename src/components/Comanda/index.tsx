@@ -30,8 +30,12 @@ export function Comanda({
   const { orderItems, updateOrderItem, deleteOrderItem } = useOrder();
   const { customers } = useCustomers();
   const { tables, updateTable } = useTables();
-  const { getOpenComandaByTable, closeComanda, removeOrderFromComandas } =
-    useComandas();
+  const {
+    comandas,
+    getOpenComandaByTable,
+    closeComanda,
+    removeOrderFromComandas,
+  } = useComandas();
 
   // itemId -> quantidade que o usuário quer pagar deste item
   const [selections, setSelections] = useState<Record<string, number>>({});
@@ -66,10 +70,25 @@ export function Comanda({
     );
   };
 
-  const displayedItems =
-    filterTableNumber !== undefined
-      ? orderItems.filter(item => item.tableNumber === filterTableNumber)
-      : orderItems;
+  const displayedItems = (() => {
+    if (filterTableNumber !== undefined) {
+      const open = getOpenComandaByTable(filterTableNumber);
+
+      if (!open) {
+        return [];
+      }
+
+      return orderItems.filter(item =>
+        open.orderItemIds.includes(item.id),
+      );
+    }
+
+    const openIds = new Set(
+      comandas.filter(c => c.status === 'Aberta').flatMap(c => c.orderItemIds),
+    );
+
+    return orderItems.filter(item => openIds.has(item.id));
+  })();
 
   const total = displayedItems.reduce((sum, item) => {
     if (isCancelled(item) || isAwaiting(item)) {

@@ -1,5 +1,6 @@
 import { CheckCircle, Clock, Timer, XCircle } from 'lucide-react';
 import { Container } from '../../../components/Container';
+import { useComandas } from '../../../contexts/ComandaContext';
 import { useOrder } from '../../../contexts/OrderContext';
 import type { OrderItem } from '../../../models/order';
 import { FormatTime } from '../../../utils/format';
@@ -8,11 +9,18 @@ import styles from './styles.module.css';
 
 export function Cozinha() {
   const { orderItems, updateOrderItem } = useOrder();
+  const { comandas } = useComandas();
+
+  const openOrderIds = new Set(
+    comandas.filter(c => c.status === 'Aberta').flatMap(c => c.orderItemIds),
+  );
+
+  const activeOrders = orderItems.filter(item => openOrderIds.has(item.id));
 
   const statusRank = (item: OrderItem) =>
     item.status === 'Aguardando confirmação' ? 0 : 1;
 
-  const sortedOrders = [...orderItems].sort((a, b) => {
+  const sortedOrders = [...activeOrders].sort((a, b) => {
     if (statusRank(a) !== statusRank(b)) {
       return statusRank(a) - statusRank(b);
     }
@@ -47,7 +55,7 @@ export function Cozinha() {
           </span>
         </div>
 
-        {orderItems.length === 0 ? (
+        {activeOrders.length === 0 ? (
           <p className={styles.emptyState}>Nenhum pedido recebido.</p>
         ) : (
           <div className={styles.orderGrid}>

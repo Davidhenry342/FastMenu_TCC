@@ -1,7 +1,51 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { tables as initialTables } from '../data/tables';
 import type { Table } from '../models/table';
+
+const TABLES_STORAGE_KEY = 'fastmenu:tables';
+const COMANDAS_STORAGE_KEY = 'fastmenu:comandas';
+
+function loadTables(): Table[] {
+  try {
+    const stored = localStorage.getItem(TABLES_STORAGE_KEY);
+
+    if (!stored) {
+      return initialTables;
+    }
+
+    return JSON.parse(stored) as Table[];
+  } catch {
+    return initialTables;
+  }
+}
+
+function ensureOpenComandasAreOccupied(tables: Table[]): Table[] {
+  try {
+    const stored = localStorage.getItem(COMANDAS_STORAGE_KEY);
+
+    if (!stored) {
+      return tables;
+    }
+
+    const comandas = JSON.parse(stored) as { tableNumber: number; status: string }[];
+    const openTableNumbers = new Set(
+      comandas.filter(c => c.status === 'Aberta').map(c => c.tableNumber),
+    );
+
+    if (openTableNumbers.size === 0) {
+      return tables;
+    }
+
+    return tables.map(table =>
+      openTableNumbers.has(table.number) && table.status !== 'Ocupada'
+        ? { ...table, status: 'Ocupada' as const }
+        : table,
+    );
+  } catch {
+    return tables;
+  }
+}
 
 type TableContextValue = {
   tables: Table[];
@@ -17,7 +61,13 @@ type TableProviderProps = {
 };
 
 export function TableProvider({ children }: TableProviderProps) {
-  const [tables, setTables] = useState<Table[]>(initialTables);
+  const [tables, setTables] = useState<Table[]>(() =>
+    ensureOpenComandasAreOccupied(loadTables()),
+  );
+
+  useEffect(() => {
+    localStorage.setItem(TABLES_STORAGE_KEY, JSON.stringify(tables));
+  }, [tables]);
 
   const addTable = (table: Table) => {
     setTables(current => [...current, table]);
