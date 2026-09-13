@@ -48,7 +48,7 @@ export function Home() {
   );
 
   const waitFor = (categoryId: string, fallback: number) =>
-    averageWait.get(categoryId) ?? fallback;
+    fallback + (averageWait.get(categoryId) ?? 0);
 
   const categoryOrder = new Map(
     categories.map((category, index) => [category.id, index]),
