@@ -31,6 +31,10 @@ export function Cozinha() {
     updateOrderItem(id, { status: 'Cancelado' });
   };
 
+  const handleDeliver = (id: string) => {
+    updateOrderItem(id, { status: 'Entregue' });
+  };
+
   return (
     <Container>
       <section className={styles.section}>
@@ -107,10 +111,20 @@ export function Cozinha() {
                   )}
 
                   {item.status === 'Em produção' && (
-                    <span className={`${styles.statusBadge} ${styles.acceptedBadge}`}>
-                      <CheckCircle />
-                      Pedido aceito
-                    </span>
+                    <>
+                      <span className={`${styles.statusBadge} ${styles.acceptedBadge}`}>
+                        <CheckCircle />
+                        Pedido aceito
+                      </span>
+
+                      <button
+                        type="button"
+                        className={styles.deliverButton}
+                        onClick={() => handleDeliver(item.id)}
+                      >
+                        Marcar como entregue
+                      </button>
+                    </>
                   )}
 
                   {item.status === 'Cancelado' && (
