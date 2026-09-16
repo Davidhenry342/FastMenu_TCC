@@ -34,3 +34,25 @@ export function FormatPhone(value: string): string {
     .replace(/(\d{2})(\d)/, '($1) $2')
     .replace(/(\d{5})(\d)/, '$1-$2');
 }
+
+export function ParseCurrency(value: string): number {
+  const cleaned = value.replace(/[^\d,]/g, '').replace('.', '');
+
+  if (!cleaned) {
+    return 0;
+  }
+
+  return Number(cleaned.replace(',', '.'));
+}
+
+export function FormatCurrencyInput(value: string): string {
+  const digits = value.replace(/\D/g, '');
+
+  if (!digits) {
+    return '';
+  }
+
+  const amount = Number(digits) / 100;
+
+  return FormatCurrency(amount);
+}

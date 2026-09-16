@@ -5,7 +5,12 @@ import { useCustomers } from '../../contexts/CustomerContext';
 import { useOrder } from '../../contexts/OrderContext';
 import { useTables } from '../../contexts/TableContext';
 import type { OrderItem, OrderStatus } from '../../models/order';
-import { FormatCurrency, FormatTime } from '../../utils/format';
+import {
+  FormatCurrency,
+  FormatCurrencyInput,
+  FormatTime,
+  ParseCurrency,
+} from '../../utils/format';
 import { DefaultProductImage } from '../../utils/imageDefault';
 import styles from './styles.module.css';
 
@@ -22,6 +27,8 @@ const statusClass: Record<OrderStatus, string> = {
   Entregue: styles.statusEntregue,
 };
 
+type PaymentMode = 'quantity' | 'value';
+
 export function Comanda({
   onClose,
   tableNumber: filterTableNumber,
@@ -37,8 +44,9 @@ export function Comanda({
     removeOrderFromComandas,
   } = useComandas();
 
-  // itemId -> quantidade que o usuário quer pagar deste item
   const [selections, setSelections] = useState<Record<string, number>>({});
+  const [valueSelections, setValueSelections] = useState<Record<string, string>>({});
+  const [itemModes, setItemModes] = useState<Record<string, PaymentMode>>({});
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -52,8 +60,23 @@ export function Comanda({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const getRemaining = (item: OrderItem) =>
-    item.quantity - (item.paidQuantity ?? 0);
+  const getPaidAmount = (item: OrderItem) =>
+    item.paidAmount ?? (item.paidQuantity ?? 0) * item.product.price;
+
+  const getTotalPrice = (item: OrderItem) => item.product.price * item.quantity;
+
+  const getRemainingAmount = (item: OrderItem) =>
+    Math.max(0, getTotalPrice(item) - getPaidAmount(item));
+
+  const getRemainingQuantity = (item: OrderItem) => {
+    const remaining = getRemainingAmount(item);
+
+    if (remaining <= 0.009) {
+      return 0;
+    }
+
+    return Math.ceil(remaining / item.product.price - 1e-9);
+  };
 
   const isCancelled = (item: OrderItem) => item.status === 'Cancelado';
   const isAwaiting = (item: OrderItem) =>
@@ -78,9 +101,7 @@ export function Comanda({
         return [];
       }
 
-      return orderItems.filter(item =>
-        open.orderItemIds.includes(item.id),
-      );
+      return orderItems.filter(item => open.orderItemIds.includes(item.id));
     }
 
     const openIds = new Set(
@@ -95,33 +116,97 @@ export function Comanda({
       return sum;
     }
 
-    return sum + item.product.price * getRemaining(item);
+    return sum + getRemainingAmount(item);
   }, 0);
 
   const selectedSubtotal = displayedItems.reduce((sum, item) => {
-    const qty = selections[item.id];
-
-    if (!qty || isCancelled(item) || isAwaiting(item)) {
+    if (isCancelled(item) || isAwaiting(item)) {
       return sum;
     }
 
-    return sum + item.product.price * qty;
-  }, 0);
+    const mode = itemModes[item.id] ?? 'quantity';
 
-  const hasSelection = Object.keys(selections).length > 0;
+    if (mode === 'quantity') {
+      const qty = selections[item.id];
 
-  const toggleSelection = (id: string) => {
-    setSelections(current => {
-      const next = { ...current };
-
-      if (next[id]) {
-        delete next[id];
-      } else {
-        next[id] = 1;
+      if (!qty) {
+        return sum;
       }
 
-      return next;
-    });
+      return sum + Math.min(item.product.price * qty, getRemainingAmount(item));
+    }
+
+    const raw = valueSelections[item.id];
+
+    if (!raw) {
+      return sum;
+    }
+
+    const parsed = ParseCurrency(raw);
+
+    if (parsed <= 0) {
+      return sum;
+    }
+
+    return sum + Math.min(parsed, getRemainingAmount(item));
+  }, 0);
+
+  const hasSelection = displayedItems.some(item => {
+    if (isCancelled(item) || isAwaiting(item)) {
+      return false;
+    }
+
+    const mode = itemModes[item.id] ?? 'quantity';
+
+    if (mode === 'quantity') {
+      return Boolean(selections[item.id]);
+    }
+
+    return ParseCurrency(valueSelections[item.id] ?? '') > 0;
+  });
+
+  const toggleSelection = (id: string) => {
+    const isSelected =
+      selections[id] !== undefined || valueSelections[id] !== undefined;
+
+    if (isSelected) {
+      setSelections(current => {
+        const next = { ...current };
+
+        delete next[id];
+
+        return next;
+      });
+      setValueSelections(current => {
+        const next = { ...current };
+
+        delete next[id];
+
+        return next;
+      });
+      setItemModes(current => {
+        const next = { ...current };
+
+        delete next[id];
+
+        return next;
+      });
+    } else {
+      setItemModes(current => ({ ...current, [id]: 'quantity' }));
+      setSelections(current => ({ ...current, [id]: 1 }));
+    }
+  };
+
+  const setItemMode = (id: string, mode: PaymentMode) => {
+    setItemModes(current => ({ ...current, [id]: mode }));
+
+    if (mode === 'quantity' && selections[id] === undefined) {
+      setSelections(current => ({ ...current, [id]: 1 }));
+    }
+
+    if (mode === 'value' && valueSelections[id] === undefined) {
+      setValueSelections(current => ({ ...current, [id]: '' }));
+    }
   };
 
   const changeSelectionQuantity = (id: string, delta: number, max: number) => {
@@ -131,32 +216,91 @@ export function Comanda({
     }));
   };
 
+  const handleValueChange = (id: string, raw: string, max: number) => {
+    const formatted = FormatCurrencyInput(raw);
+    const parsed = ParseCurrency(formatted);
+
+    if (formatted && parsed > max) {
+      setValueSelections(current => ({
+        ...current,
+        [id]: FormatCurrency(max),
+      }));
+
+      return;
+    }
+
+    setValueSelections(current => ({
+      ...current,
+      [id]: formatted,
+    }));
+  };
+
   const handlePay = () => {
-    const updatedItems = new Map<string, OrderItem>();
+    const updatedMap = new Map<string, OrderItem>();
 
-    Object.entries(selections).forEach(([id, qty]) => {
-      const item = orderItems.find(orderItem => orderItem.id === id);
-
-      if (!item || isCancelled(item) || isAwaiting(item)) {
-        return;
+    for (const item of displayedItems) {
+      if (isCancelled(item) || isAwaiting(item)) {
+        continue;
       }
 
       if (
         filterTableNumber !== undefined &&
         item.tableNumber !== filterTableNumber
       ) {
-        return;
+        continue;
       }
 
-      const nextPaid = (item.paidQuantity ?? 0) + qty;
+      const mode = itemModes[item.id] ?? 'quantity';
 
-      updateOrderItem(id, { paidQuantity: nextPaid });
-      updatedItems.set(id, { ...item, paidQuantity: nextPaid });
-    });
+      if (mode === 'quantity') {
+        const qty = selections[item.id];
+
+        if (!qty) {
+          continue;
+        }
+
+        const deltaAmount = Math.min(
+          item.product.price * qty,
+          getRemainingAmount(item),
+        );
+        const nextPaidAmount = getPaidAmount(item) + deltaAmount;
+        const nextPaidQuantity = (item.paidQuantity ?? 0) + qty;
+
+        updateOrderItem(item.id, {
+          paidAmount: nextPaidAmount,
+          paidQuantity: nextPaidQuantity,
+        });
+        updatedMap.set(item.id, {
+          ...item,
+          paidAmount: nextPaidAmount,
+          paidQuantity: nextPaidQuantity,
+        });
+      } else {
+        const raw = valueSelections[item.id];
+
+        if (!raw) {
+          continue;
+        }
+
+        const parsed = ParseCurrency(raw);
+
+        if (parsed <= 0) {
+          continue;
+        }
+
+        const remaining = getRemainingAmount(item);
+        const delta = Math.min(parsed, remaining);
+        const nextPaidAmount = getPaidAmount(item) + delta;
+
+        updateOrderItem(item.id, { paidAmount: nextPaidAmount });
+        updatedMap.set(item.id, { ...item, paidAmount: nextPaidAmount });
+      }
+    }
 
     setSelections({});
+    setValueSelections({});
+    setItemModes({});
 
-    // Se todos os itens pagáveis da mesa foram pagos, fecha a comanda e libera a mesa
     const targetTableNumber = filterTableNumber ?? 1;
     const openComanda = getOpenComandaByTable(targetTableNumber);
 
@@ -173,14 +317,14 @@ export function Comanda({
         return sum;
       }
 
-      const paid = updatedItems.has(item.id)
-        ? (updatedItems.get(item.id)?.paidQuantity ?? 0)
-        : (item.paidQuantity ?? 0);
+      const paid = updatedMap.has(item.id)
+        ? getPaidAmount(updatedMap.get(item.id)!)
+        : getPaidAmount(item);
 
-      return sum + (item.quantity - paid);
+      return sum + Math.max(0, getTotalPrice(item) - paid);
     }, 0);
 
-    if (remainingForTable === 0) {
+    if (remainingForTable <= 0.01) {
       closeComanda(openComanda.id);
 
       const table = tables.find(entry => entry.number === targetTableNumber);
@@ -195,6 +339,20 @@ export function Comanda({
     deleteOrderItem(id);
     removeOrderFromComandas(id);
     setSelections(current => {
+      const next = { ...current };
+
+      delete next[id];
+
+      return next;
+    });
+    setValueSelections(current => {
+      const next = { ...current };
+
+      delete next[id];
+
+      return next;
+    });
+    setItemModes(current => {
       const next = { ...current };
 
       delete next[id];
@@ -235,13 +393,18 @@ export function Comanda({
           <ul className={styles.itemList}>
             {displayedItems.map(item => {
               const observation = formatObservation(item);
-              const paid = item.paidQuantity ?? 0;
-              const remaining = getRemaining(item);
-              const isPaid = remaining === 0;
+              const paidAmount = getPaidAmount(item);
+              const totalPrice = getTotalPrice(item);
+              const remainingAmount = getRemainingAmount(item);
+              const remainingQty = getRemainingQuantity(item);
+              const isPaid = remainingAmount <= 0.01;
               const cancelled = isCancelled(item);
               const awaiting = isAwaiting(item);
               const isLocked = isPaid || cancelled || awaiting;
-              const isSelected = Boolean(selections[item.id]);
+              const isSelected =
+                selections[item.id] !== undefined ||
+                valueSelections[item.id] !== undefined;
+              const mode = itemModes[item.id] ?? 'quantity';
 
               return (
                 <li
@@ -285,16 +448,18 @@ export function Comanda({
                         {item.status}
                       </span>
 
-                      {paid > 0 && !isPaid && (
+                      {paidAmount > 0.01 && !isPaid && (
                         <span className={styles.partiallyPaid}>
-                          Pago {paid}/{item.quantity}
+                          Pago {FormatCurrency(paidAmount)} /{' '}
+                          {FormatCurrency(totalPrice)}
                         </span>
                       )}
 
                       {isPaid && (
                         <span className={styles.paidBadge}>
                           <CheckCircle />
-                          Pago {paid}/{item.quantity}
+                          Pago {FormatCurrency(paidAmount)} /{' '}
+                          {FormatCurrency(totalPrice)}
                         </span>
                       )}
                     </div>
@@ -306,44 +471,96 @@ export function Comanda({
                     )}
 
                     {!isLocked && isSelected && (
-                      <div
-                        className={styles.qtySelector}
-                        onClick={event => event.stopPropagation()}
-                      >
-                        <button
-                          type="button"
-                          className={styles.qtyButton}
-                          aria-label="Diminuir quantidade a pagar"
-                          onClick={() =>
-                            changeSelectionQuantity(
-                              item.id,
-                              -1,
-                              remaining,
-                            )
-                          }
-                        >
-                          <Minus />
-                        </button>
+                      <>
+                        <div className={styles.itemModeTabs}>
+                          <button
+                            type="button"
+                            className={`${styles.itemModeTab} ${mode === 'quantity' ? styles.itemModeTabActive : ''}`}
+                            onClick={event => {
+                              event.stopPropagation();
+                              setItemMode(item.id, 'quantity');
+                            }}
+                          >
+                            Qtd
+                          </button>
 
-                        <span className={styles.qtyValue}>
-                          {selections[item.id]}
-                        </span>
+                          <button
+                            type="button"
+                            className={`${styles.itemModeTab} ${mode === 'value' ? styles.itemModeTabActive : ''}`}
+                            onClick={event => {
+                              event.stopPropagation();
+                              setItemMode(item.id, 'value');
+                            }}
+                          >
+                            R$
+                          </button>
+                        </div>
 
-                        <button
-                          type="button"
-                          className={styles.qtyButton}
-                          aria-label="Aumentar quantidade a pagar"
-                          onClick={() =>
-                            changeSelectionQuantity(item.id, 1, remaining)
-                          }
-                        >
-                          <Plus />
-                        </button>
-                      </div>
+                        {mode === 'quantity' ? (
+                          <div
+                            className={styles.qtySelector}
+                            onClick={event => event.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              className={styles.qtyButton}
+                              aria-label="Diminuir quantidade a pagar"
+                              onClick={() =>
+                                changeSelectionQuantity(
+                                  item.id,
+                                  -1,
+                                  remainingQty,
+                                )
+                              }
+                            >
+                              <Minus />
+                            </button>
+
+                            <span className={styles.qtyValue}>
+                              {selections[item.id]}
+                            </span>
+
+                            <button
+                              type="button"
+                              className={styles.qtyButton}
+                              aria-label="Aumentar quantidade a pagar"
+                              onClick={() =>
+                                changeSelectionQuantity(item.id, 1, remainingQty)
+                              }
+                            >
+                              <Plus />
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            className={styles.valueField}
+                            onClick={event => event.stopPropagation()}
+                          >
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              className={styles.valueInput}
+                              value={valueSelections[item.id] ?? ''}
+                              onChange={event =>
+                                handleValueChange(
+                                  item.id,
+                                  event.target.value,
+                                  remainingAmount,
+                                )
+                              }
+                              placeholder={FormatCurrency(remainingAmount)}
+                            />
+
+                            <span className={styles.remainingHint}>
+                              Restante: {FormatCurrency(remainingAmount)}
+                            </span>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     <span className={styles.itemSubtotal}>
-                      {FormatCurrency(item.product.price * item.quantity)}
+                      {FormatCurrency(remainingAmount)}
                     </span>
 
                     {canDelete && (
