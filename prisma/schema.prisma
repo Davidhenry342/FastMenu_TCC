@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum TableStatus {
+  Disponível @map("Disponível")
+  Ocupada
+}
+
+enum EmployeeRole {
+  Garçom @map("Garçom")
+  Cozinheiro_a @map("Cozinheiro(a)")
+  Caixa
+  Gerente
+}
+
+enum OrderStatus {
+  Em_produção @map("Em produção")
+  Aguardando_confirmacao @map("Aguardando confirmação")
+  Cancelado
+  Entregue
+}
+
+enum ComandaStatus {
+  Aberta
+  Fechada
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id              String      @id @default(cuid())
+  name            String
+  description     String      @db.Text
+  price           Decimal     @db.Decimal(10, 2)
+  preparationTime Int
+  categoryId      String
+  category        Category    @relation(fields: [categoryId], references: [id])
+  imageUrl        String?
+  orderItems      OrderItem[]
+
+  @@map("products")
+}
+
+model RestaurantTable {
+  id       String      @id @default(cuid())
+  number   Int         @unique
+  status   TableStatus
+  comandas Comanda[]
+
+  @@map("tables")
+}
+
+model Customer {
+  id        String      @id @default(cuid())
+  phone     String      @unique
+  name      String
+  email     String      @unique
+  createdAt DateTime    @default(now())
+  orders    OrderItem[]
+
+  @@map("customers")
+}
+
+model Employee {
+  id       String       @id @default(cuid())
+  cpf      String       @unique
+  name     String
+  phone    String
+  address  String
+  role     EmployeeRole
+  email    String       @unique
+  password String
+
+  @@map("employees")
+}
+
+model Comanda {
+  id          String         @id @default(cuid())
+  tableId     String
+  table       RestaurantTable @relation(fields: [tableId], references: [id])
+  tableNumber Int
+  status      ComandaStatus
+  openedAt    DateTime       @default(now())
+  closedAt    DateTime?
+  orderItems  OrderItem[]
+
+  @@map("comandas")
+}
+
+model OrderItem {
+  id            String      @id @default(cuid())
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id])
+  quantity      Int
+  orderedAt     DateTime    @default(now())
+  status        OrderStatus
+  observation   String?     @db.Text
+  paidQuantity  Int?
+  paidAmount    Decimal?    @db.Decimal(10, 2)
+  tableNumber   Int?
+  customerId    String?
+  customer      Customer?   @relation(fields: [customerId], references: [id])
+  comandaId     String?
+  comanda       Comanda?    @relation(fields: [comandaId], references: [id])
+
+  @@map("order_items")
+}
