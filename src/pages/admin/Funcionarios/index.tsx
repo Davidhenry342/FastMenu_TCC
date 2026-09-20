@@ -37,30 +37,39 @@ export function Funcionarios() {
         .map(employee => employee.email)
     : [];
 
-  const handleCreate = (data: Omit<Employee, 'id'>) => {
-    addEmployee({
-      id: crypto.randomUUID(),
-      ...data,
-    });
-    setIsCreateOpen(false);
+  const handleCreate = async (data: Omit<Employee, 'id'>) => {
+    try {
+      await addEmployee(data);
+      setIsCreateOpen(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Falha ao criar funcionário');
+    }
   };
 
-  const handleEdit = (data: Omit<Employee, 'id'>) => {
+  const handleEdit = async (data: Omit<Employee, 'id'>) => {
     if (!editingEmployee) {
       return;
     }
 
-    updateEmployee(editingEmployee.id, data);
-    setEditingEmployee(null);
+    try {
+      await updateEmployee(editingEmployee.id, data);
+      setEditingEmployee(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Falha ao atualizar funcionário');
+    }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deletingEmployee) {
       return;
     }
 
-    deleteEmployee(deletingEmployee.id);
-    setDeletingEmployee(null);
+    try {
+      await deleteEmployee(deletingEmployee.id);
+      setDeletingEmployee(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Falha ao excluir funcionário');
+    }
   };
 
   return (

@@ -1,52 +1,15 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { customers as initialCustomers } from '../data/customers';
 import type { Customer } from '../models/customer';
-
-const CUSTOMERS_STORAGE_KEY = 'fastmenu:customers';
-const CURRENT_CUSTOMER_STORAGE_KEY = 'fastmenu:currentCustomer';
-
-function loadCustomers(): Customer[] {
-  try {
-    const stored = localStorage.getItem(CUSTOMERS_STORAGE_KEY);
-
-    if (!stored) {
-      return initialCustomers;
-    }
-
-    const parsed = JSON.parse(stored) as Customer[];
-
-    return parsed.map(customer => ({
-      ...customer,
-      createdAt: new Date(customer.createdAt),
-    }));
-  } catch {
-    return initialCustomers;
-  }
-}
-
-function loadCurrentCustomer(): Customer | null {
-  try {
-    const stored = localStorage.getItem(CURRENT_CUSTOMER_STORAGE_KEY);
-
-    if (!stored) {
-      return null;
-    }
-
-    const parsed = JSON.parse(stored) as Customer;
-
-    return { ...parsed, createdAt: new Date(parsed.createdAt) };
-  } catch {
-    return null;
-  }
-}
 
 type CustomerContextValue = {
   customers: Customer[];
   currentCustomer: Customer | null;
-  addCustomer: (customer: Customer) => void;
-  login: (customer: Customer) => void;
-  logout: () => void;
+  isLoading: boolean;
+  addCustomer: (customer: Omit<Customer, 'id' | 'createdAt'>) => Promise<void>;
+  login: (customer: Customer) => Promise<void>;
+  loginByPhone: (digits: string) => Promise<Customer>;
+  logout: () => Promise<void>;
   findByPhone: (digits: string) => Customer | undefined;
 };
 
@@ -56,47 +19,92 @@ type CustomerProviderProps = {
   children: ReactNode;
 };
 
+function reviveCustomer(raw: unknown): Customer {
+  const data = raw as Customer & { createdAt: string | Date };
+
+  return { ...data, createdAt: new Date(data.createdAt) };
+}
+
 export function CustomerProvider({ children }: CustomerProviderProps) {
-  const [customers, setCustomers] = useState<Customer[]>(loadCustomers);
-  const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(
-    loadCurrentCustomer,
-  );
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(customers));
-  }, [customers]);
+    fetch('/api/customers', { credentials: 'include' })
+      .then(res => (res.ok ? res.json() : []))
+      .then((data: unknown[]) => setCustomers(data.map(reviveCustomer)))
+      .catch(() => {});
 
-  useEffect(() => {
-    if (currentCustomer) {
-      localStorage.setItem(
-        CURRENT_CUSTOMER_STORAGE_KEY,
-        JSON.stringify(currentCustomer),
-      );
-    } else {
-      localStorage.removeItem(CURRENT_CUSTOMER_STORAGE_KEY);
+    fetch('/api/customers/me', { credentials: 'include' })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (data) {
+          setCurrentCustomer(reviveCustomer(data as unknown));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const addCustomer = async (data: Omit<Customer, 'id' | 'createdAt'>) => {
+    const res = await fetch('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      throw new Error('Falha ao criar cliente');
     }
-  }, [currentCustomer]);
 
-  const addCustomer = (customer: Customer) => {
-    setCustomers(current => [...current, customer]);
+    const created = reviveCustomer(await res.json());
+
+    setCustomers(current => [...current, created]);
+    setCurrentCustomer(created);
   };
 
-  const login = (customer: Customer) => {
+  const login = async (customer: Customer) => {
+    const digits = customer.phone.replace(/\D/g, '');
+
+    await loginByPhone(digits);
+  };
+
+  const loginByPhone = async (digits: string) => {
+    const res = await fetch('/api/customers/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ phone: digits }),
+    });
+
+    if (!res.ok) {
+      throw new Error('Customer not found');
+    }
+
+    const customer = reviveCustomer(await res.json());
+
     setCurrentCustomer(customer);
+
+    return customer;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await fetch('/api/customers/logout', {
+      method: 'POST',
+      credentials: 'include',
+    }).catch(() => {});
+
     setCurrentCustomer(null);
   };
 
   const findByPhone = (digits: string) =>
-    customers.find(
-      customer => customer.phone.replace(/\D/g, '') === digits,
-    );
+    customers.find(customer => customer.phone.replace(/\D/g, '') === digits);
 
   return (
     <CustomerContext.Provider
-      value={{ customers, currentCustomer, addCustomer, login, logout, findByPhone }}
+      value={{ customers, currentCustomer, isLoading, addCustomer, login, loginByPhone, logout, findByPhone }}
     >
       {children}
     </CustomerContext.Provider>

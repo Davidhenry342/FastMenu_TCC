@@ -6,13 +6,17 @@ import styles from './styles.module.css';
 
 export function AdminLayout() {
   const navigate = useNavigate();
-  const { currentEmployee } = useEmployees();
+  const { currentEmployee, isLoading } = useEmployees();
 
   useEffect(() => {
-    if (!currentEmployee) {
+    if (!isLoading && !currentEmployee) {
       navigate('/admin/login', { replace: true });
     }
-  }, [currentEmployee, navigate]);
+  }, [currentEmployee, isLoading, navigate]);
+
+  if (isLoading) {
+    return null;
+  }
 
   if (!currentEmployee) {
     return null;

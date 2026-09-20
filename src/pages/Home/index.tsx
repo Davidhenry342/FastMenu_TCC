@@ -18,7 +18,7 @@ import styles from './styles.module.css';
 
 export function Home() {
   const navigate = useNavigate();
-  const { currentCustomer } = useCustomers();
+  const { currentCustomer, isLoading } = useCustomers();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isComandaOpen, setIsComandaOpen] = useState(false);
@@ -29,10 +29,10 @@ export function Home() {
     useComandas();
 
   useEffect(() => {
-    if (!currentCustomer) {
+    if (!isLoading && !currentCustomer) {
       navigate('/', { replace: true });
     }
-  }, [currentCustomer, navigate]);
+  }, [currentCustomer, isLoading, navigate]);
 
   const averageWait = useMemo(
     () => averageWaitByCategory(orderItems),
@@ -59,6 +59,10 @@ export function Home() {
   const activeCategoryName =
     categories.find(category => category.id === selectedCategory)?.name ??
     'Destaques';
+
+  if (isLoading) {
+    return null;
+  }
 
   if (!currentCustomer) {
     return null;

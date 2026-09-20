@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 import { prisma } from './lib/prisma';
@@ -12,7 +13,13 @@ import tablesRouter from './routes/tables';
 const app = express();
 const PORT = Number(process.env.PORT ?? 3000);
 
-app.use(cors());
+app.use(
+  cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+  }),
+);
+app.use(cookieParser());
 app.use(express.json());
 
 app.get('/health', (_req, res) => {

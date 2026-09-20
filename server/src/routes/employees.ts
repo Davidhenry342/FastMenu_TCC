@@ -1,13 +1,47 @@
 import bcrypt from 'bcrypt';
 import { Router } from 'express';
+import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
 
 const router = Router();
+const JWT_SECRET = process.env.JWT_SECRET ?? 'fastmenu-tcc-jwt-secret-change-in-production';
+
+function signEmployeeToken(employeeId: string) {
+  return jwt.sign({ sub: employeeId, role: 'employee' }, JWT_SECRET, {
+    expiresIn: '7d',
+  });
+}
 
 router.get('/', async (_req, res) => {
   const employees = await prisma.employee.findMany();
 
   res.json(employees);
+});
+
+router.get('/me', async (req, res) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const token = (req as any).cookies?.employee_token as string | undefined;
+
+  if (!token) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as { sub: string };
+    const employee = await prisma.employee.findUnique({
+      where: { id: payload.sub },
+    });
+
+    if (!employee) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    res.json(employee);
+  } catch {
+    res.status(401).json({ error: 'Not authenticated' });
+  }
 });
 
 router.post('/', async (req, res) => {
@@ -21,7 +55,7 @@ router.put('/:id', async (req, res) => {
   const data: Record<string, unknown> = { ...req.body };
 
   if (data.password) {
-    data.password = await bcrypt.hash(data.password, 10);
+    data.password = await bcrypt.hash(data.password as string, 10);
   } else {
     delete data.password;
   }
@@ -47,7 +81,22 @@ router.post('/login', async (req, res) => {
     return;
   }
 
+  const token = signEmployeeToken(employee.id);
+
+  res.cookie('employee_token', token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
   res.json(employee);
+});
+
+router.post('/logout', (_req, res) => {
+  res.clearCookie('employee_token');
+
+  res.json({ ok: true });
 });
 
 export default router;

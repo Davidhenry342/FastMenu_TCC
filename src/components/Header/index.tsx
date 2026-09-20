@@ -1,6 +1,8 @@
-import styles from './styles.module.css';
+import { LogOut, ShoppingCart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ContainerHead } from '../ContainerHead';
-import { ShoppingCart } from 'lucide-react';
+import { useCustomers } from '../../contexts/CustomerContext';
+import styles from './styles.module.css';
 
 type HeaderProps = {
   restaurantName: string;
@@ -8,6 +10,14 @@ type HeaderProps = {
 };
 
 export function Header({ restaurantName, onCartClick }: HeaderProps) {
+  const navigate = useNavigate();
+  const { logout } = useCustomers();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+
   return (
     <header className={styles.header}>
       <ContainerHead>
@@ -19,9 +29,21 @@ export function Header({ restaurantName, onCartClick }: HeaderProps) {
 
             <span className={styles.restaurantName}>{restaurantName}</span>
           </div>
-          <button type="button" className={styles.buttonCart} onClick={onCartClick}>
-            <ShoppingCart />
-          </button>
+          <div className={styles.actions}>
+            <button type="button" className={styles.buttonCart} onClick={onCartClick}>
+              <ShoppingCart />
+            </button>
+
+            <button
+              type="button"
+              className={styles.logoutButton}
+              onClick={handleLogout}
+              aria-label="Sair"
+            >
+              <LogOut />
+              Sair
+            </button>
+          </div>
         </div>
       </ContainerHead>
     </header>

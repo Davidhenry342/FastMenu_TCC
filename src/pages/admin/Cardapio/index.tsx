@@ -26,30 +26,39 @@ export function Cardapio() {
   const categoryNameOf = (product: Product) =>
     categories.find(category => category.id === product.categoryId)?.name;
 
-  const handleCreate = (data: Omit<Product, 'id'>) => {
-    addProduct({
-      id: crypto.randomUUID(),
-      ...data,
-    });
-    setIsCreateOpen(false);
+  const handleCreate = async (data: Omit<Product, 'id'>) => {
+    try {
+      await addProduct(data);
+      setIsCreateOpen(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Falha ao criar produto');
+    }
   };
 
-  const handleEdit = (data: Omit<Product, 'id'>) => {
+  const handleEdit = async (data: Omit<Product, 'id'>) => {
     if (!editingProduct) {
       return;
     }
 
-    updateProduct(editingProduct.id, data);
-    setEditingProduct(null);
+    try {
+      await updateProduct(editingProduct.id, data);
+      setEditingProduct(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Falha ao atualizar produto');
+    }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deletingProduct) {
       return;
     }
 
-    deleteProduct(deletingProduct.id);
-    setDeletingProduct(null);
+    try {
+      await deleteProduct(deletingProduct.id);
+      setDeletingProduct(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Falha ao excluir produto');
+    }
   };
 
   return (

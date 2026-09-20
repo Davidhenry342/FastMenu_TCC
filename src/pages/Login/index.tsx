@@ -42,7 +42,7 @@ export function Login() {
     setError(null);
   };
 
-  const handleConfirmYes = () => {
+  const handleConfirmYes = async () => {
     const found = findByPhone(digits);
 
     if (!found) {
@@ -51,8 +51,12 @@ export function Login() {
       return;
     }
 
-    login(found);
-    navigate('/cardapio');
+    try {
+      await login(found);
+      navigate('/cardapio');
+    } catch {
+      setError('Falha ao fazer login. Tente novamente.');
+    }
   };
 
   const handleConfirmNo = () => {
@@ -62,7 +66,7 @@ export function Login() {
     setError(null);
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name.trim() || !email.trim()) {
       setError('Preencha nome e e-mail.');
 
@@ -100,17 +104,17 @@ export function Login() {
       return;
     }
 
-    const newCustomer = {
-      id: crypto.randomUUID(),
-      phone: formattedPhone,
-      name: name.trim(),
-      email: emailTrimmed,
-      createdAt: new Date(),
-    };
+    try {
+      await addCustomer({
+        phone: formattedPhone,
+        name: name.trim(),
+        email: emailTrimmed,
+      });
 
-    addCustomer(newCustomer);
-    login(newCustomer);
-    navigate('/cardapio');
+      navigate('/cardapio');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao cadastrar.');
+    }
   };
 
   const handleBackToPhone = () => {

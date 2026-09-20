@@ -6,13 +6,13 @@ import styles from './styles.module.css';
 
 export function AdminLogin() {
   const navigate = useNavigate();
-  const { findByCpf, login } = useEmployees();
+  const { login } = useEmployees();
 
   const [cpf, setCpf] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const digits = cpf.replace(/\D/g, '');
 
     if (digits.length !== 11) {
@@ -27,16 +27,12 @@ export function AdminLogin() {
       return;
     }
 
-    const employee = findByCpf(digits);
-
-    if (!employee || employee.password !== password) {
-      setError('CPF ou senha inválidos.');
-
-      return;
+    try {
+      await login(digits, password);
+      navigate('/admin/mesas');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'CPF ou senha inválidos.');
     }
-
-    login(employee);
-    navigate('/admin/mesas');
   };
 
   return (

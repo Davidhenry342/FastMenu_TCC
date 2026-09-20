@@ -1,47 +1,16 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { employees as initialEmployees } from '../data/employees';
 import type { Employee } from '../models/employee';
-
-const EMPLOYEES_STORAGE_KEY = 'fastmenu:employees';
-const CURRENT_EMPLOYEE_STORAGE_KEY = 'fastmenu:currentEmployee';
-
-function loadEmployees(): Employee[] {
-  try {
-    const stored = localStorage.getItem(EMPLOYEES_STORAGE_KEY);
-
-    if (!stored) {
-      return initialEmployees;
-    }
-
-    return JSON.parse(stored) as Employee[];
-  } catch {
-    return initialEmployees;
-  }
-}
-
-function loadCurrentEmployee(): Employee | null {
-  try {
-    const stored = localStorage.getItem(CURRENT_EMPLOYEE_STORAGE_KEY);
-
-    if (!stored) {
-      return null;
-    }
-
-    return JSON.parse(stored) as Employee;
-  } catch {
-    return null;
-  }
-}
 
 type EmployeeContextValue = {
   employees: Employee[];
   currentEmployee: Employee | null;
-  addEmployee: (employee: Employee) => void;
-  updateEmployee: (id: string, changes: Partial<Employee>) => void;
-  deleteEmployee: (id: string) => void;
-  login: (employee: Employee) => void;
-  logout: () => void;
+  isLoading: boolean;
+  addEmployee: (employee: Omit<Employee, 'id'>) => Promise<void>;
+  updateEmployee: (id: string, changes: Partial<Employee>) => Promise<void>;
+  deleteEmployee: (id: string) => Promise<void>;
+  login: (cpfDigits: string, password: string) => Promise<Employee>;
+  logout: () => Promise<void>;
   findByCpf: (digits: string) => Employee | undefined;
 };
 
@@ -52,55 +21,110 @@ type EmployeeProviderProps = {
 };
 
 export function EmployeeProvider({ children }: EmployeeProviderProps) {
-  const [employees, setEmployees] = useState<Employee[]>(loadEmployees);
-  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(
-    loadCurrentEmployee,
-  );
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem(EMPLOYEES_STORAGE_KEY, JSON.stringify(employees));
-  }, [employees]);
+    fetch('/api/employees', { credentials: 'include' })
+      .then(res => (res.ok ? res.json() : []))
+      .then((data: Employee[]) => setEmployees(data))
+      .catch(() => {});
 
-  useEffect(() => {
-    if (currentEmployee) {
-      localStorage.setItem(
-        CURRENT_EMPLOYEE_STORAGE_KEY,
-        JSON.stringify(currentEmployee),
-      );
-    } else {
-      localStorage.removeItem(CURRENT_EMPLOYEE_STORAGE_KEY);
+    fetch('/api/employees/me', { credentials: 'include' })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (data) {
+          setCurrentEmployee(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const addEmployee = async (employee: Omit<Employee, 'id'>) => {
+    const res = await fetch('/api/employees', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(employee),
+    });
+
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({}))) as { error?: string };
+
+      throw new Error(err.error ?? 'Falha ao criar funcionário');
     }
-  }, [currentEmployee]);
 
-  const addEmployee = (employee: Employee) => {
-    setEmployees(current => [...current, employee]);
+    const created: Employee = await res.json();
+
+    setEmployees(current => [...current, created]);
   };
 
-  const updateEmployee = (id: string, changes: Partial<Employee>) => {
+  const updateEmployee = async (id: string, changes: Partial<Employee>) => {
+    const res = await fetch(`/api/employees/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(changes),
+    });
+
+    if (!res.ok) {
+      throw new Error('Falha ao atualizar funcionário');
+    }
+
+    const updated: Employee = await res.json();
+
     setEmployees(current =>
-      current.map(employee =>
-        employee.id === id ? { ...employee, ...changes } : employee,
-      ),
+      current.map(employee => (employee.id === id ? updated : employee)),
     );
 
     setCurrentEmployee(current =>
-      current && current.id === id ? { ...current, ...changes } : current,
+      current && current.id === id ? updated : current,
     );
   };
 
-  const deleteEmployee = (id: string) => {
+  const deleteEmployee = async (id: string) => {
+    const res = await fetch(`/api/employees/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    if (!res.ok) {
+      throw new Error('Falha ao excluir funcionário');
+    }
+
     setEmployees(current => current.filter(employee => employee.id !== id));
-
-    setCurrentEmployee(current =>
-      current && current.id === id ? null : current,
-    );
+    setCurrentEmployee(current => (current && current.id === id ? null : current));
   };
 
-  const login = (employee: Employee) => {
+  const login = async (cpfDigits: string, password: string) => {
+    const res = await fetch('/api/employees/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ cpf: cpfDigits, password }),
+    });
+
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({}))) as { error?: string };
+
+      throw new Error(err.error ?? 'CPF ou senha inválidos.');
+    }
+
+    const employee: Employee = await res.json();
+
     setCurrentEmployee(employee);
+
+    return employee;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await fetch('/api/employees/logout', {
+      method: 'POST',
+      credentials: 'include',
+    }).catch(() => {});
+
     setCurrentEmployee(null);
   };
 
@@ -112,6 +136,7 @@ export function EmployeeProvider({ children }: EmployeeProviderProps) {
       value={{
         employees,
         currentEmployee,
+        isLoading,
         addEmployee,
         updateEmployee,
         deleteEmployee,
