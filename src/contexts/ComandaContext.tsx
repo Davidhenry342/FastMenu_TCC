@@ -1,36 +1,26 @@
+/* eslint-disable react-hooks/set-state-in-effect, @typescript-eslint/no-explicit-any */
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Comanda } from '../models/comanda';
 
-const COMANDAS_STORAGE_KEY = 'fastmenu:comandas';
-
-function loadComandas(): Comanda[] {
-  try {
-    const stored = localStorage.getItem(COMANDAS_STORAGE_KEY);
-
-    if (!stored) {
-      return [];
-    }
-
-    const parsed = JSON.parse(stored) as Comanda[];
-
-    return parsed.map(comanda => ({
-      ...comanda,
-      openedAt: new Date(comanda.openedAt),
-      closedAt: comanda.closedAt ? new Date(comanda.closedAt) : undefined,
-    }));
-  } catch {
-    return [];
-  }
+function reviveComanda(raw: any): Comanda {
+  return {
+    ...raw,
+    openedAt: new Date(raw.openedAt),
+    closedAt: raw.closedAt ? new Date(raw.closedAt) : undefined,
+    orderItemIds: raw.orderItemIds ?? raw.orderItems?.map((o: any) => o.id) ?? [],
+  };
 }
 
 type ComandaContextValue = {
   comandas: Comanda[];
-  openComanda: (tableId: string, tableNumber: number) => Comanda;
-  addOrderToComanda: (comandaId: string, orderItemId: string) => void;
-  closeComanda: (comandaId: string) => void;
+  isLoading: boolean;
+  openComanda: (tableId: string, tableNumber: number) => Promise<Comanda>;
+  addOrderToComanda: (comandaId: string, orderItemId: string) => Promise<void>;
+  closeComanda: (comandaId: string) => Promise<void>;
   getOpenComandaByTable: (tableNumber: number) => Comanda | undefined;
-  removeOrderFromComandas: (orderItemId: string) => void;
+  removeOrderFromComandas: (orderItemId: string) => Promise<void>;
+  refreshComandas: () => Promise<void>;
 };
 
 const ComandaContext = createContext<ComandaContextValue | null>(null);
@@ -40,44 +30,79 @@ type ComandaProviderProps = {
 };
 
 export function ComandaProvider({ children }: ComandaProviderProps) {
-  const [comandas, setComandas] = useState<Comanda[]>(loadComandas);
+  const [comandas, setComandas] = useState<Comanda[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    localStorage.setItem(COMANDAS_STORAGE_KEY, JSON.stringify(comandas));
-  }, [comandas]);
+  const fetchComandas = async () => {
+    const res = await fetch('/api/comandas', { credentials: 'include' });
 
-  const openComanda = (tableId: string, tableNumber: number) => {
-    const newComanda: Comanda = {
-      id: crypto.randomUUID(),
-      tableId,
-      tableNumber,
-      status: 'Aberta',
-      openedAt: new Date(),
-      orderItemIds: [],
-    };
+    if (!res.ok) {
+      throw new Error('Falha ao carregar comandas');
+    }
 
-    setComandas(current => [...current, newComanda]);
+    const data: any[] = await res.json();
 
-    return newComanda;
+    setComandas(data.map(reviveComanda));
   };
 
-  const addOrderToComanda = (comandaId: string, orderItemId: string) => {
+  useEffect(() => {
+    fetchComandas()
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const openComanda = async (tableId: string, tableNumber: number) => {
+    const res = await fetch('/api/comandas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ tableId, tableNumber, status: 'Aberta' }),
+    });
+
+    if (!res.ok) {
+      throw new Error('Falha ao abrir comanda');
+    }
+
+    const created = reviveComanda(await res.json());
+
+    setComandas(current => [...current, created]);
+
+    return created;
+  };
+
+  const addOrderToComanda = async (comandaId: string, orderItemId: string) => {
+    const res = await fetch(`/api/comandas/${comandaId}/add-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ orderItemId }),
+    });
+
+    if (!res.ok) {
+      throw new Error('Falha ao adicionar pedido à comanda');
+    }
+
+    const updated = reviveComanda(await res.json());
+
     setComandas(current =>
-      current.map(comanda =>
-        comanda.id === comandaId
-          ? { ...comanda, orderItemIds: [...comanda.orderItemIds, orderItemId] }
-          : comanda,
-      ),
+      current.map(comanda => (comanda.id === comandaId ? updated : comanda)),
     );
   };
 
-  const closeComanda = (comandaId: string) => {
+  const closeComanda = async (comandaId: string) => {
+    const res = await fetch(`/api/comandas/${comandaId}/close`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    if (!res.ok) {
+      throw new Error('Falha ao fechar comanda');
+    }
+
+    const updated = reviveComanda(await res.json());
+
     setComandas(current =>
-      current.map(comanda =>
-        comanda.id === comandaId
-          ? { ...comanda, status: 'Fechada', closedAt: new Date() }
-          : comanda,
-      ),
+      current.map(comanda => (comanda.id === comandaId ? updated : comanda)),
     );
   };
 
@@ -87,7 +112,21 @@ export function ComandaProvider({ children }: ComandaProviderProps) {
         comanda.tableNumber === tableNumber && comanda.status === 'Aberta',
     );
 
-  const removeOrderFromComandas = (orderItemId: string) => {
+  const removeOrderFromComandas = async (orderItemId: string) => {
+    // Remove from any comanda that contains it via API
+    const promises = comandas
+      .filter(c => c.orderItemIds.includes(orderItemId))
+      .map(c =>
+        fetch(`/api/comandas/${c.id}/remove-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ orderItemId }),
+        }),
+      );
+
+    await Promise.all(promises);
+
     setComandas(current =>
       current.map(comanda => ({
         ...comanda,
@@ -96,15 +135,21 @@ export function ComandaProvider({ children }: ComandaProviderProps) {
     );
   };
 
+  const refreshComandas = async () => {
+    await fetchComandas();
+  };
+
   return (
     <ComandaContext.Provider
       value={{
         comandas,
+        isLoading,
         openComanda,
         addOrderToComanda,
         closeComanda,
         getOpenComandaByTable,
         removeOrderFromComandas,
+        refreshComandas,
       }}
     >
       {children}

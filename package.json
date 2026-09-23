@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "db:generate": "prisma generate && prisma generate --schema=server/prisma/schema.prisma",
+    "db:generate": "prisma generate && npx --prefix server prisma generate && xcopy /E /I node_modules\\.prisma server\\node_modules\\.prisma /Y >nul && xcopy /E /I node_modules\\@prisma\\client server\\node_modules\\@prisma\\client /Y >nul",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts"
   },

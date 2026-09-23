@@ -3,7 +3,6 @@ import { CheckCircle, Minus, Plus, Trash2, X } from 'lucide-react';
 import { useComandas } from '../../contexts/ComandaContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useOrder } from '../../contexts/OrderContext';
-import { useTables } from '../../contexts/TableContext';
 import type { OrderItem, OrderStatus } from '../../models/order';
 import {
   FormatCurrency,
@@ -36,7 +35,6 @@ export function Comanda({
 }: ComandaProps) {
   const { orderItems, updateOrderItem, deleteOrderItem } = useOrder();
   const { customers } = useCustomers();
-  const { tables, updateTable } = useTables();
   const {
     comandas,
     getOpenComandaByTable,
@@ -235,7 +233,7 @@ export function Comanda({
     }));
   };
 
-  const handlePay = () => {
+  const handlePay = async () => {
     const updatedMap = new Map<string, OrderItem>();
 
     for (const item of displayedItems) {
@@ -266,7 +264,7 @@ export function Comanda({
         const nextPaidAmount = getPaidAmount(item) + deltaAmount;
         const nextPaidQuantity = (item.paidQuantity ?? 0) + qty;
 
-        updateOrderItem(item.id, {
+        await updateOrderItem(item.id, {
           paidAmount: nextPaidAmount,
           paidQuantity: nextPaidQuantity,
         });
@@ -292,7 +290,7 @@ export function Comanda({
         const delta = Math.min(parsed, remaining);
         const nextPaidAmount = getPaidAmount(item) + delta;
 
-        updateOrderItem(item.id, { paidAmount: nextPaidAmount });
+        await updateOrderItem(item.id, { paidAmount: nextPaidAmount });
         updatedMap.set(item.id, { ...item, paidAmount: nextPaidAmount });
       }
     }
@@ -325,19 +323,13 @@ export function Comanda({
     }, 0);
 
     if (remainingForTable <= 0.01) {
-      closeComanda(openComanda.id);
-
-      const table = tables.find(entry => entry.number === targetTableNumber);
-
-      if (table) {
-        updateTable(table.id, { status: 'Disponível' });
-      }
+      await closeComanda(openComanda.id);
     }
   };
 
-  const handleDeleteOrder = (id: string) => {
-    deleteOrderItem(id);
-    removeOrderFromComandas(id);
+  const handleDeleteOrder = async (id: string) => {
+    await deleteOrderItem(id);
+    await removeOrderFromComandas(id);
     setSelections(current => {
       const next = { ...current };
 

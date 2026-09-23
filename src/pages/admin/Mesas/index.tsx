@@ -27,31 +27,39 @@ export function Mesas() {
         .map(table => table.number)
     : [];
 
-  const handleCreate = (number: number) => {
-    addTable({
-      id: crypto.randomUUID(),
-      number,
-      status: 'Disponível',
-    });
-    setIsCreateOpen(false);
+  const handleCreate = async (number: number) => {
+    try {
+      await addTable({ number });
+      setIsCreateOpen(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Falha ao criar mesa');
+    }
   };
 
-  const handleEdit = (number: number) => {
+  const handleEdit = async (number: number) => {
     if (!editingTable) {
       return;
     }
 
-    updateTable(editingTable.id, { number });
-    setEditingTable(null);
+    try {
+      await updateTable(editingTable.id, { number });
+      setEditingTable(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Falha ao atualizar mesa');
+    }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deletingTable) {
       return;
     }
 
-    deleteTable(deletingTable.id);
-    setDeletingTable(null);
+    try {
+      await deleteTable(deletingTable.id);
+      setDeletingTable(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Falha ao excluir mesa');
+    }
   };
 
   return (

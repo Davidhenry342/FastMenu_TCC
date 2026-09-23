@@ -24,7 +24,7 @@ export function Home() {
   const [isComandaOpen, setIsComandaOpen] = useState(false);
   const { addOrderItem, orderItems } = useOrder();
   const { products } = useProducts();
-  const { tables, updateTable } = useTables();
+  const { tables } = useTables();
   const { openComanda, addOrderToComanda, getOpenComandaByTable } =
     useComandas();
 
@@ -153,7 +153,7 @@ export function Home() {
         <ProductModal
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
-          onConfirm={(product, quantity, observation) => {
+          onConfirm={async (product, quantity, observation) => {
             const tableNumber = 1;
             const table = tables.find(entry => entry.number === tableNumber);
 
@@ -163,32 +163,32 @@ export function Home() {
 
             const orderId = crypto.randomUUID();
 
-            addOrderItem({
-              id: orderId,
-              product,
-              quantity,
-              orderedAt: new Date(),
-              status: 'Aguardando confirmação',
-              observation: observation.trim() || undefined,
-              tableNumber,
-              customerId: currentCustomer.id,
-            });
+            try {
+              await addOrderItem({
+                id: orderId,
+                product,
+                quantity,
+                orderedAt: new Date(),
+                status: 'Aguardando confirmação',
+                observation: observation.trim() || undefined,
+                tableNumber,
+                customerId: currentCustomer.id,
+              });
 
-            if (table.status !== 'Ocupada') {
-              updateTable(table.id, { status: 'Ocupada' });
+              const existingComanda = getOpenComandaByTable(tableNumber);
+
+              if (existingComanda) {
+                await addOrderToComanda(existingComanda.id, orderId);
+              } else {
+                const newComanda = await openComanda(table.id, tableNumber);
+
+                await addOrderToComanda(newComanda.id, orderId);
+              }
+
+              setSelectedProduct(null);
+            } catch (err) {
+              alert(err instanceof Error ? err.message : 'Falha ao criar pedido');
             }
-
-            const existingComanda = getOpenComandaByTable(tableNumber);
-
-            if (existingComanda) {
-              addOrderToComanda(existingComanda.id, orderId);
-            } else {
-              const newComanda = openComanda(table.id, tableNumber);
-
-              addOrderToComanda(newComanda.id, orderId);
-            }
-
-            setSelectedProduct(null);
           }}
         />
       )}

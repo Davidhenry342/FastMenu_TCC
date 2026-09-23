@@ -1,57 +1,15 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { tables as initialTables } from '../data/tables';
 import type { Table } from '../models/table';
-
-const TABLES_STORAGE_KEY = 'fastmenu:tables';
-const COMANDAS_STORAGE_KEY = 'fastmenu:comandas';
-
-function loadTables(): Table[] {
-  try {
-    const stored = localStorage.getItem(TABLES_STORAGE_KEY);
-
-    if (!stored) {
-      return initialTables;
-    }
-
-    return JSON.parse(stored) as Table[];
-  } catch {
-    return initialTables;
-  }
-}
-
-function ensureOpenComandasAreOccupied(tables: Table[]): Table[] {
-  try {
-    const stored = localStorage.getItem(COMANDAS_STORAGE_KEY);
-
-    if (!stored) {
-      return tables;
-    }
-
-    const comandas = JSON.parse(stored) as { tableNumber: number; status: string }[];
-    const openTableNumbers = new Set(
-      comandas.filter(c => c.status === 'Aberta').map(c => c.tableNumber),
-    );
-
-    if (openTableNumbers.size === 0) {
-      return tables;
-    }
-
-    return tables.map(table =>
-      openTableNumbers.has(table.number) && table.status !== 'Ocupada'
-        ? { ...table, status: 'Ocupada' as const }
-        : table,
-    );
-  } catch {
-    return tables;
-  }
-}
 
 type TableContextValue = {
   tables: Table[];
-  addTable: (table: Table) => void;
-  updateTable: (id: string, changes: Partial<Table>) => void;
-  deleteTable: (id: string) => void;
+  isLoading: boolean;
+  addTable: (table: Omit<Table, 'id' | 'status'> & { number: number }) => Promise<void>;
+  updateTable: (id: string, changes: Partial<Table>) => Promise<void>;
+  deleteTable: (id: string) => Promise<void>;
+  refreshTables: () => Promise<void>;
 };
 
 const TableContext = createContext<TableContextValue | null>(null);
@@ -61,31 +19,85 @@ type TableProviderProps = {
 };
 
 export function TableProvider({ children }: TableProviderProps) {
-  const [tables, setTables] = useState<Table[]>(() =>
-    ensureOpenComandasAreOccupied(loadTables()),
-  );
+  const [tables, setTables] = useState<Table[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    localStorage.setItem(TABLES_STORAGE_KEY, JSON.stringify(tables));
-  }, [tables]);
+  const fetchTables = async () => {
+    const res = await fetch('/api/tables', { credentials: 'include' });
 
-  const addTable = (table: Table) => {
-    setTables(current => [...current, table]);
+    if (!res.ok) {
+      throw new Error('Falha ao carregar mesas');
+    }
+
+    const data: Table[] = await res.json();
+
+    setTables(data);
   };
 
-  const updateTable = (id: string, changes: Partial<Table>) => {
+  useEffect(() => {
+    fetchTables()
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const addTable = async (table: Omit<Table, 'id' | 'status'> & { number: number }) => {
+    const res = await fetch('/api/tables', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ number: table.number }),
+    });
+
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({}))) as { error?: string };
+
+      throw new Error(err.error ?? 'Falha ao criar mesa');
+    }
+
+    const created: Table = await res.json();
+
+    setTables(current => [...current, created].sort((a, b) => a.number - b.number));
+  };
+
+  const updateTable = async (id: string, changes: Partial<Table>) => {
+    const res = await fetch(`/api/tables/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(changes),
+    });
+
+    if (!res.ok) {
+      throw new Error('Falha ao atualizar mesa');
+    }
+
+    const updated: Table = await res.json();
+
     setTables(current =>
-      current.map(table => (table.id === id ? { ...table, ...changes } : table)),
+      current.map(table => (table.id === id ? updated : table)),
     );
   };
 
-  const deleteTable = (id: string) => {
+  const deleteTable = async (id: string) => {
+    const res = await fetch(`/api/tables/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    if (!res.ok) {
+      throw new Error('Falha ao excluir mesa');
+    }
+
     setTables(current => current.filter(table => table.id !== id));
+  };
+
+  const refreshTables = async () => {
+    await fetchTables();
   };
 
   return (
     <TableContext.Provider
-      value={{ tables, addTable, updateTable, deleteTable }}
+      value={{ tables, isLoading, addTable, updateTable, deleteTable, refreshTables }}
     >
       {children}
     </TableContext.Provider>

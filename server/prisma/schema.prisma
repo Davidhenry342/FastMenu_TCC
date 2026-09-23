@@ -55,9 +55,8 @@ model Product {
 }
 
 model RestaurantTable {
-  id       String      @id @default(cuid())
-  number   Int         @unique
-  status   TableStatus
+  id       String   @id @default(cuid())
+  number   Int      @unique
   comandas Comanda[]
 
   @@map("tables")

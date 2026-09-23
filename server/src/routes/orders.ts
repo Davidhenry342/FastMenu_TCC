@@ -1,22 +1,55 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 
 const router = Router();
 
 router.get('/', async (_req, res) => {
-  const orders = await prisma.orderItem.findMany({ include: { product: true, customer: true } });
+  const orders = await prisma.orderItem.findMany({
+    include: { product: true, customer: true },
+    orderBy: { orderedAt: 'asc' },
+  });
 
   res.json(orders);
 });
 
 router.post('/', async (req, res) => {
-  const order = await prisma.orderItem.create({ data: req.body, include: { product: true } });
+  const body: any = { ...req.body };
+
+  if (body.product && body.product.id) {
+    body.productId = body.product.id;
+    delete body.product;
+  }
+
+  if (body.orderedAt) {
+    body.orderedAt = new Date(body.orderedAt);
+  }
+
+  const order = await prisma.orderItem.create({
+    data: body,
+    include: { product: true, customer: true },
+  });
 
   res.status(201).json(order);
 });
 
 router.put('/:id', async (req, res) => {
-  const order = await prisma.orderItem.update({ where: { id: req.params.id }, data: req.body });
+  const body: any = { ...req.body };
+
+  if (body.product && body.product.id) {
+    body.productId = body.product.id;
+    delete body.product;
+  }
+
+  if (body.orderedAt) {
+    body.orderedAt = new Date(body.orderedAt);
+  }
+
+  const order = await prisma.orderItem.update({
+    where: { id: req.params.id },
+    data: body,
+    include: { product: true },
+  });
 
   res.json(order);
 });
