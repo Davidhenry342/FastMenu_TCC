@@ -1,1 +1,1 @@
-export const DefaultProductImage = 'https://placehold.co/50X50';
+export const DefaultProductImage = '/uploads/products/default.jpg';

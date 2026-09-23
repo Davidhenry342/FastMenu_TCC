@@ -48,7 +48,7 @@ model Product {
   preparationTime Int
   categoryId      String
   category        Category    @relation(fields: [categoryId], references: [id])
-  imageUrl        String?
+  imageUrl        String?   @db.VarChar(500)
   orderItems      OrderItem[]
 
   @@map("products")

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { FormatPhone } from '../../utils/format';
 import styles from './styles.module.css';
@@ -8,7 +8,15 @@ type Step = 'phone' | 'confirm' | 'register';
 
 export function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const mesaParam = searchParams.get('mesa');
   const { findByPhone, addCustomer, login } = useCustomers();
+
+  const navigateToCardapio = () => {
+    const suffix = mesaParam ? `?mesa=${encodeURIComponent(mesaParam)}` : '';
+
+    navigate(`/cardapio${suffix}`);
+  };
 
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
@@ -53,7 +61,7 @@ export function Login() {
 
     try {
       await login(found);
-      navigate('/cardapio');
+      navigateToCardapio();
     } catch {
       setError('Falha ao fazer login. Tente novamente.');
     }
@@ -111,7 +119,7 @@ export function Login() {
         email: emailTrimmed,
       });
 
-      navigate('/cardapio');
+      navigateToCardapio();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao cadastrar.');
     }

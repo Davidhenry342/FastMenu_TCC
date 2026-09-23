@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Comanda } from '../../components/Comanda';
 import { Container } from '../../components/Container';
 import { DefaultButton } from '../../components/DefaultButton';
@@ -18,21 +18,31 @@ import styles from './styles.module.css';
 
 export function Home() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const mesaParam = searchParams.get('mesa');
   const { currentCustomer, isLoading } = useCustomers();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isComandaOpen, setIsComandaOpen] = useState(false);
   const { addOrderItem, orderItems } = useOrder();
   const { products } = useProducts();
-  const { tables } = useTables();
+  const { tables, isLoading: tablesLoading } = useTables();
   const { openComanda, addOrderToComanda, getOpenComandaByTable } =
     useComandas();
 
+  const mesaNumber = mesaParam ? Number(mesaParam) : NaN;
+  const isMesaParamValid =
+    Number.isInteger(mesaNumber) && tables.some(t => t.number === mesaNumber);
+  const isMesaMissing = !mesaParam;
+  const isMesaInvalid = Boolean(mesaParam) && !isMesaParamValid && !tablesLoading;
+
   useEffect(() => {
     if (!isLoading && !currentCustomer) {
-      navigate('/', { replace: true });
+      const suffix = mesaParam ? `?mesa=${encodeURIComponent(mesaParam)}` : '';
+
+      navigate(`/${suffix}`, { replace: true });
     }
-  }, [currentCustomer, isLoading, navigate]);
+  }, [currentCustomer, isLoading, mesaParam, navigate]);
 
   const averageWait = useMemo(
     () => averageWaitByCategory(orderItems),
@@ -60,7 +70,7 @@ export function Home() {
     categories.find(category => category.id === selectedCategory)?.name ??
     'Destaques';
 
-  if (isLoading) {
+  if (isLoading || tablesLoading) {
     return null;
   }
 
@@ -68,10 +78,27 @@ export function Home() {
     return null;
   }
 
+  if (isMesaMissing || isMesaInvalid) {
+    return (
+      <Container>
+        <section className={styles.hero}>
+          <div className={styles.heroContent}>
+            <h1>Mesa não informada</h1>
+
+            <p>
+              Escaneie o QR Code da mesa para acessar o cardápio. Acesso sem
+              mesa é inválido.
+            </p>
+          </div>
+        </section>
+      </Container>
+    );
+  }
+
   return (
     <>
       <Header
-        restaurantName="Fast Menu Restaurante"
+        restaurantName={`Fast Menu - Mesa ${mesaNumber}`}
         onCartClick={() => setIsComandaOpen(true)}
       />
 
@@ -147,14 +174,16 @@ export function Home() {
         </Container>
       </main>
 
-      {isComandaOpen && <Comanda onClose={() => setIsComandaOpen(false)} />}
+      {isComandaOpen && (
+        <Comanda tableNumber={mesaNumber} onClose={() => setIsComandaOpen(false)} />
+      )}
 
       {selectedProduct && (
         <ProductModal
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
           onConfirm={async (product, quantity, observation) => {
-            const tableNumber = 1;
+            const tableNumber = mesaNumber;
             const table = tables.find(entry => entry.number === tableNumber);
 
             if (!table) {

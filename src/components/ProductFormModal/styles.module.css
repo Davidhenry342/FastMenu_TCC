@@ -86,10 +86,67 @@
 
 .input:focus,
 .select:focus,
-.textarea:focus {
+.textarea:focus,
+.fileInput:focus {
   outline: none;
 
   border-color: var(--primary);
+}
+
+.fileInput {
+  padding: 1.2rem;
+
+  border: 0.1rem solid var(--gray-600);
+  border-radius: 0.8rem;
+
+  background: var(--gray-800);
+  color: var(--text-default);
+
+  font: inherit;
+  font-size: 1.4rem;
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+
+  gap: 1.2rem;
+
+  margin-top: 0.8rem;
+}
+
+.previewImage {
+  width: 8rem;
+  height: 8rem;
+
+  border-radius: 0.8rem;
+
+  object-fit: cover;
+
+  display: block;
+}
+
+.removeButton {
+  padding: 0.6rem 1.2rem;
+
+  border: 0.1rem solid var(--gray-600);
+  border-radius: 0.6rem;
+
+  background: var(--gray-800);
+  color: var(--text-muted);
+
+  font-size: 1.3rem;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+.removeButton:hover {
+  border-color: var(--error);
+  color: var(--error);
 }
 
 .error {

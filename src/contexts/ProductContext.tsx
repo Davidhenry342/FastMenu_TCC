@@ -2,10 +2,15 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Product } from '../models/product';
 
+type ProductFormPayload = Omit<Product, 'id'> & {
+  imageFile?: File | null;
+  removeImage?: boolean;
+};
+
 type ProductContextValue = {
   products: Product[];
-  addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
-  updateProduct: (id: string, changes: Partial<Product>) => Promise<void>;
+  addProduct: (product: ProductFormPayload) => Promise<void>;
+  updateProduct: (id: string, changes: ProductFormPayload) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
 };
 
@@ -25,6 +30,26 @@ function reviveProduct(raw: unknown): Product {
   };
 }
 
+function toFormData(data: ProductFormPayload): FormData {
+  const form = new FormData();
+
+  form.append('name', data.name);
+  form.append('description', data.description);
+  form.append('price', String(data.price));
+  form.append('preparationTime', String(data.preparationTime));
+  form.append('categoryId', data.categoryId);
+
+  if (data.imageFile) {
+    form.append('image', data.imageFile);
+  }
+
+  if (data.removeImage) {
+    form.append('removeImage', 'true');
+  }
+
+  return form;
+}
+
 export function ProductProvider({ children }: ProductProviderProps) {
   const [products, setProducts] = useState<Product[]>([]);
 
@@ -35,12 +60,11 @@ export function ProductProvider({ children }: ProductProviderProps) {
       .catch(() => {});
   }, []);
 
-  const addProduct = async (product: Omit<Product, 'id'>) => {
+  const addProduct = async (product: ProductFormPayload) => {
     const res = await fetch('/api/products', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(product),
+      body: toFormData(product),
     });
 
     if (!res.ok) {
@@ -52,12 +76,11 @@ export function ProductProvider({ children }: ProductProviderProps) {
     setProducts(current => [...current, created]);
   };
 
-  const updateProduct = async (id: string, changes: Partial<Product>) => {
+  const updateProduct = async (id: string, changes: ProductFormPayload) => {
     const res = await fetch(`/api/products/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(changes),
+      body: toFormData(changes),
     });
 
     if (!res.ok) {

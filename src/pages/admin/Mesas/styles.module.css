@@ -236,3 +236,98 @@
 .deleteButton:hover {
   filter: brightness(90%);
 }
+
+.qrOverlay {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 2.4rem;
+
+  background: rgba(0, 0, 0, 0.6);
+
+  z-index: 1000;
+}
+
+.qrBox {
+  width: 100%;
+  max-width: 36rem;
+
+  padding: 2.4rem;
+
+  border: 0.1rem solid var(--gray-700);
+  border-radius: 1.2rem;
+
+  background: var(--card-background);
+
+  text-align: center;
+}
+
+.qrBox h3 {
+  margin: 0 0 0.8rem;
+
+  color: var(--text-default);
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.qrBox p {
+  margin: 0 0 1.6rem;
+
+  color: var(--text-muted);
+  font-size: 1.4rem;
+}
+
+.qrCanvas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1.6rem;
+
+  border-radius: 0.8rem;
+
+  background: #ffffff;
+}
+
+.qrUrl {
+  margin-top: 1.2rem;
+
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  word-break: break-all;
+}
+
+.qrActions {
+  display: flex;
+
+  gap: 1.2rem;
+
+  margin-top: 1.6rem;
+}
+
+.confirmButton {
+  flex: 1;
+
+  padding: 1.2rem;
+
+  border: none;
+  border-radius: 0.8rem;
+
+  background: var(--primary);
+  color: var(--text-over-primary);
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: background 0.2s ease;
+}
+
+.confirmButton:hover {
+  background: var(--primary-light);
+}

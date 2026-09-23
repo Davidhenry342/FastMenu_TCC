@@ -1,6 +1,7 @@
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
+import path from 'path';
 import { prisma } from './lib/prisma';
 import categoriesRouter from './routes/categories';
 import comandasRouter from './routes/comandas';
@@ -21,6 +22,7 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });

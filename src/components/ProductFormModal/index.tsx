@@ -1,9 +1,10 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
 import { categories } from '../../data/categories';
 import type { Product } from '../../models/product';
 import styles from './styles.module.css';
 
-type ProductFormData = Omit<Product, 'id'>;
+type ProductFormData = Omit<Product, 'id'> & { imageFile?: File | null; removeImage?: boolean };
 
 type ProductFormModalProps = {
   title: string;
@@ -29,7 +30,11 @@ export function ProductFormModal({
   const [preparationTime, setPreparationTime] = useState(
     initialProduct?.preparationTime?.toString() ?? '',
   );
-  const [imageUrl, setImageUrl] = useState(initialProduct?.imageUrl ?? '');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    initialProduct?.imageUrl ?? null,
+  );
+  const [removeImage, setRemoveImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -43,6 +48,50 @@ export function ProductFormModal({
 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    if (!imageFile) {
+      return;
+    }
+
+    const url = URL.createObjectURL(imageFile);
+
+    setPreviewUrl(url);
+
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+    if (!allowed.includes(file.type)) {
+      setError('Tipo inválido. Use jpg, jpeg, png ou webp.');
+
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Imagem deve ter no máximo 5MB.');
+
+      return;
+    }
+
+    setImageFile(file);
+    setRemoveImage(false);
+    setError(null);
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setPreviewUrl(null);
+    setRemoveImage(true);
+  };
 
   const handleSubmit = () => {
     const parsedPrice = Number(price.replace(',', '.'));
@@ -76,7 +125,9 @@ export function ProductFormModal({
       categoryId,
       price: parsedPrice,
       preparationTime: parsedTime,
-      imageUrl: imageUrl.trim() || undefined,
+      imageUrl: initialProduct?.imageUrl,
+      imageFile,
+      removeImage,
     });
   };
 
@@ -195,17 +246,30 @@ export function ProductFormModal({
 
         <div className={styles.field}>
           <label htmlFor="product-image" className={styles.label}>
-            URL da imagem (opcional)
+            Imagem do produto (opcional)
           </label>
 
           <input
             id="product-image"
-            type="text"
-            className={styles.input}
-            value={imageUrl}
-            onChange={event => setImageUrl(event.target.value)}
-            placeholder="https://..."
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
+            className={styles.fileInput}
+            onChange={handleFileChange}
           />
+
+          {previewUrl && (
+            <div className={styles.preview}>
+              <img src={previewUrl} alt="Prévia" className={styles.previewImage} />
+
+              <button
+                type="button"
+                className={styles.removeButton}
+                onClick={handleRemoveImage}
+              >
+                Remover
+              </button>
+            </div>
+          )}
         </div>
 
         {error && <p className={styles.error}>{error}</p>}
