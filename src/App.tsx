@@ -1,13 +1,15 @@
 import './styles/global.css';
 import './styles/theme.css';
 
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
+import { AdminIndexRedirect } from './pages/admin/AdminIndexRedirect';
 import { ComandaProvider } from './contexts/ComandaContext';
 import { CustomerProvider } from './contexts/CustomerContext';
 import { EmployeeProvider } from './contexts/EmployeeContext';
 import { OrderProvider } from './contexts/OrderContext';
 import { ProductProvider } from './contexts/ProductContext';
 import { TableProvider } from './contexts/TableContext';
+import { RequireRole } from './components/RequireRole';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { Cardapio } from './pages/admin/Cardapio';
@@ -31,11 +33,39 @@ export function App() {
               <Route path="/admin/login" element={<AdminLogin />} />
 
               <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<Navigate to="mesas" replace />} />
-                <Route path="mesas" element={<Mesas />} />
-                <Route path="funcionarios" element={<Funcionarios />} />
-                <Route path="cardapio" element={<Cardapio />} />
-                <Route path="cozinha" element={<Cozinha />} />
+                <Route index element={<AdminIndexRedirect />} />
+                <Route
+                  path="mesas"
+                  element={
+                    <RequireRole roles={['Gerente', 'Garçom', 'Caixa']}>
+                      <Mesas />
+                    </RequireRole>
+                  }
+                />
+                <Route
+                  path="funcionarios"
+                  element={
+                    <RequireRole roles={['Gerente']}>
+                      <Funcionarios />
+                    </RequireRole>
+                  }
+                />
+                <Route
+                  path="cardapio"
+                  element={
+                    <RequireRole roles={['Gerente']}>
+                      <Cardapio />
+                    </RequireRole>
+                  }
+                />
+                <Route
+                  path="cozinha"
+                  element={
+                    <RequireRole roles={['Gerente', 'Garçom', 'Cozinheiro(a)']}>
+                      <Cozinha />
+                    </RequireRole>
+                  }
+                />
               </Route>
                 </Routes>
               </ProductProvider>

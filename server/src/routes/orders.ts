@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
+import { requireEmployee, requireRole } from '../middleware/auth';
 
 const router = Router();
 
@@ -22,7 +23,7 @@ function mapStatusFromPrisma<T extends { status: string }>(item: T): T {
   return { ...item, status: fromPrismaStatus[item.status] ?? item.status };
 }
 
-router.get('/', async (_req, res) => {
+router.get('/', requireEmployee, requireRole('Gerente', 'Garçom', 'Cozinheiro(a)', 'Caixa'), async (_req, res) => {
   const orders = await prisma.orderItem.findMany({
     include: { product: true, customer: true },
     orderBy: { orderedAt: 'asc' },
@@ -55,7 +56,7 @@ router.post('/', async (req, res) => {
   res.status(201).json(mapStatusFromPrisma(order as any));
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireEmployee, requireRole('Gerente', 'Garçom', 'Cozinheiro(a)', 'Caixa'), async (req, res) => {
   const body: any = { ...req.body };
 
   if (body.product && body.product.id) {
@@ -80,7 +81,7 @@ router.put('/:id', async (req, res) => {
   res.json(mapStatusFromPrisma(order as any));
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => {
   await prisma.orderItem.delete({ where: { id: req.params.id } });
 
   res.status(204).end();

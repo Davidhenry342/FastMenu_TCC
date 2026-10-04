@@ -4,6 +4,7 @@ import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
 import { prisma } from '../lib/prisma';
+import { requireEmployee, requireRole } from '../middleware/auth';
 
 const router = Router();
 
@@ -41,7 +42,7 @@ router.get('/', async (_req, res) => {
   res.json(products);
 });
 
-router.post('/', upload.single('image'), async (req, res) => {
+router.post('/', requireEmployee, requireRole('Gerente'), upload.single('image'), async (req, res) => {
   const body = req.body as Record<string, string>;
   const file = (req as any).file as Express.Multer.File | undefined;
 
@@ -65,7 +66,7 @@ router.post('/', upload.single('image'), async (req, res) => {
   res.status(201).json(product);
 });
 
-router.put('/:id', upload.single('image'), async (req, res) => {
+router.put('/:id', requireEmployee, requireRole('Gerente'), upload.single('image'), async (req, res) => {
   const body = req.body as Record<string, string>;
   const file = (req as any).file as Express.Multer.File | undefined;
 
@@ -123,7 +124,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
   res.json(product);
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => {
   const existing = await prisma.product.findUnique({ where: { id: req.params.id } });
 
   if (existing?.imageUrl && existing.imageUrl.startsWith('/uploads/')) {

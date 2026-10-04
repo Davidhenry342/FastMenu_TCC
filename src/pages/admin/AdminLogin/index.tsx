@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEmployees } from '../../../contexts/EmployeeContext';
 import { FormatCpf } from '../../../utils/format';
+import { firstAllowedRoute } from '../../../utils/permissions';
 import styles from './styles.module.css';
 
 export function AdminLogin() {
@@ -28,8 +29,8 @@ export function AdminLogin() {
     }
 
     try {
-      await login(digits, password);
-      navigate('/admin/mesas');
+      const employee = await login(digits, password);
+      navigate(firstAllowedRoute(employee.role));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'CPF ou senha inválidos.');
     }

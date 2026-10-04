@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
+import { requireEmployee, requireRole } from '../middleware/auth';
 
 const router = Router();
 
-router.get('/', async (_req, res) => {
+router.get('/', requireEmployee, requireRole('Gerente', 'Garçom', 'Caixa', 'Cozinheiro(a)'), async (_req, res) => {
   const comandas = await prisma.comanda.findMany({
     include: { orderItems: { select: { id: true } } },
     orderBy: { openedAt: 'asc' },
@@ -19,7 +20,7 @@ router.get('/', async (_req, res) => {
   res.json(mapped);
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireEmployee, requireRole('Gerente', 'Garçom', 'Caixa', 'Cozinheiro(a)'), async (req, res) => {
   const comanda = await prisma.comanda.create({ data: req.body });
 
   const withItems = await prisma.comanda.findUnique({
@@ -34,7 +35,7 @@ router.post('/', async (req, res) => {
   });
 });
 
-router.post('/:id/add-order', async (req, res) => {
+router.post('/:id/add-order', requireEmployee, requireRole('Gerente', 'Garçom', 'Caixa', 'Cozinheiro(a)'), async (req, res) => {
   const { orderItemId } = req.body as { orderItemId: string };
 
   await prisma.orderItem.update({
@@ -59,7 +60,7 @@ router.post('/:id/add-order', async (req, res) => {
   });
 });
 
-router.post('/:id/remove-order', async (req, res) => {
+router.post('/:id/remove-order', requireEmployee, requireRole('Gerente', 'Garçom', 'Caixa'), async (req, res) => {
   const { orderItemId } = req.body as { orderItemId: string };
 
   await prisma.orderItem.update({
@@ -84,7 +85,7 @@ router.post('/:id/remove-order', async (req, res) => {
   });
 });
 
-router.post('/:id/close', async (req, res) => {
+router.post('/:id/close', requireEmployee, requireRole('Gerente', 'Garçom', 'Caixa'), async (req, res) => {
   const comanda = await prisma.comanda.update({
     where: { id: req.params.id },
     data: { status: 'Fechada', closedAt: new Date() },
@@ -98,7 +99,7 @@ router.post('/:id/close', async (req, res) => {
   });
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => {
   const comanda = await prisma.comanda.update({
     where: { id: req.params.id },
     data: req.body,

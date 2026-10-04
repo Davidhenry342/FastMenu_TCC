@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
+import { requireEmployee, requireRole } from '../middleware/auth';
 
 const router = Router();
 
@@ -19,7 +20,7 @@ router.get('/', async (_req, res) => {
   res.json(withStatus);
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireEmployee, requireRole('Gerente'), async (req, res) => {
   const { status: _status, ...data } = req.body as Record<string, unknown>;
 
   const table = await prisma.restaurantTable.create({ data: data as any });
@@ -27,7 +28,7 @@ router.post('/', async (req, res) => {
   res.status(201).json({ ...table, status: 'Disponível' });
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => {
   const { status: _status, ...data } = req.body as Record<string, unknown>;
 
   const table = await prisma.restaurantTable.update({
@@ -43,7 +44,7 @@ router.put('/:id', async (req, res) => {
   res.json({ ...table, status: openComanda ? 'Ocupada' : 'Disponível' });
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => {
   await prisma.restaurantTable.delete({ where: { id: req.params.id } });
 
   res.status(204).end();

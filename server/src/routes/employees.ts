@@ -2,20 +2,21 @@ import bcrypt from 'bcrypt';
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
+import { normalizeRole, requireEmployee, requireRole, toPrismaRole } from '../middleware/auth';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET ?? 'fastmenu-tcc-jwt-secret-change-in-production';
 
-function signEmployeeToken(employeeId: string) {
-  return jwt.sign({ sub: employeeId, role: 'employee' }, JWT_SECRET, {
+function signEmployeeToken(employee: { id: string; role: string }) {
+  return jwt.sign({ sub: employee.id, role: employee.role }, JWT_SECRET, {
     expiresIn: '7d',
   });
 }
 
-router.get('/', async (_req, res) => {
+router.get('/', requireEmployee, async (_req, res) => {
   const employees = await prisma.employee.findMany();
 
-  res.json(employees);
+  res.json(employees.map(e => ({ ...e, role: normalizeRole(e.role as string) })));
 });
 
 router.get('/me', async (req, res) => {
@@ -38,21 +39,31 @@ router.get('/me', async (req, res) => {
       return;
     }
 
-    res.json(employee);
+    res.json({ ...employee, role: normalizeRole(employee.role as string) });
   } catch {
     res.status(401).json({ error: 'Not authenticated' });
   }
 });
 
-router.post('/', async (req, res) => {
-  const data = { ...req.body, password: await bcrypt.hash(req.body.password, 10) };
-  const employee = await prisma.employee.create({ data });
+router.post('/', requireEmployee, requireRole('Gerente'), async (req, res) => {
+  const raw = { ...req.body } as Record<string, unknown>;
 
-  res.status(201).json(employee);
+  if (typeof raw.role === 'string') {
+    raw.role = toPrismaRole(raw.role);
+  }
+
+  const data = { ...raw, password: await bcrypt.hash(String(raw.password), 10) };
+  const employee = await prisma.employee.create({ data: data as never });
+
+  res.status(201).json({ ...employee, role: normalizeRole(employee.role as string) });
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => {
   const data: Record<string, unknown> = { ...req.body };
+
+  if (typeof data.role === 'string') {
+    data.role = toPrismaRole(data.role);
+  }
 
   if (data.password) {
     data.password = await bcrypt.hash(data.password as string, 10);
@@ -60,12 +71,12 @@ router.put('/:id', async (req, res) => {
     delete data.password;
   }
 
-  const employee = await prisma.employee.update({ where: { id: req.params.id }, data });
+  const employee = await prisma.employee.update({ where: { id: req.params.id }, data: data as never });
 
-  res.json(employee);
+  res.json({ ...employee, role: normalizeRole(employee.role as string) });
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => {
   await prisma.employee.delete({ where: { id: req.params.id } });
 
   res.status(204).end();
@@ -81,7 +92,7 @@ router.post('/login', async (req, res) => {
     return;
   }
 
-  const token = signEmployeeToken(employee.id);
+  const token = signEmployeeToken(employee);
 
   res.cookie('employee_token', token, {
     httpOnly: true,
@@ -90,7 +101,7 @@ router.post('/login', async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
-  res.json(employee);
+  res.json({ ...employee, role: normalizeRole(employee.role as string) });
 });
 
 router.post('/logout', (_req, res) => {

@@ -5,10 +5,10 @@ import { useEmployees } from '../../contexts/EmployeeContext';
 import styles from './styles.module.css';
 
 const navItems = [
-  { to: '/admin/mesas', label: 'Mesas' },
-  { to: '/admin/funcionarios', label: 'Funcionários' },
-  { to: '/admin/cardapio', label: 'Cardápio' },
-  { to: '/admin/cozinha', label: 'Cozinha' },
+  { to: '/admin/mesas', label: 'Mesas', roles: ['Gerente', 'Garçom', 'Caixa'] as const },
+  { to: '/admin/funcionarios', label: 'Funcionários', roles: ['Gerente'] as const },
+  { to: '/admin/cardapio', label: 'Cardápio', roles: ['Gerente'] as const },
+  { to: '/admin/cozinha', label: 'Cozinha', roles: ['Gerente', 'Garçom', 'Cozinheiro(a)'] as const },
 ];
 
 type AdminHeaderProps = {
@@ -17,7 +17,11 @@ type AdminHeaderProps = {
 
 export function AdminHeader({ restaurantName }: AdminHeaderProps) {
   const navigate = useNavigate();
-  const { logout } = useEmployees();
+  const { logout, currentEmployee } = useEmployees();
+
+  const visibleNavItems = navItems.filter(
+    item => currentEmployee && (item.roles as readonly string[]).includes(currentEmployee.role),
+  );
 
   const handleLogout = () => {
     logout();
@@ -37,7 +41,7 @@ export function AdminHeader({ restaurantName }: AdminHeaderProps) {
           </div>
 
           <nav className={styles.nav}>
-            {navItems.map(item => (
+            {visibleNavItems.map(item => (
               <NavLink
                 key={item.to}
                 to={item.to}

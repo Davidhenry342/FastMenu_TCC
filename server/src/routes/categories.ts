@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
+import { requireEmployee, requireRole } from '../middleware/auth';
 
 const router = Router();
 
@@ -9,7 +10,7 @@ router.get('/', async (_req, res) => {
   res.json(categories);
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireEmployee, requireRole('Gerente'), async (req, res) => {
   const category = await prisma.category.create({ data: req.body });
 
   res.status(201).json(category);

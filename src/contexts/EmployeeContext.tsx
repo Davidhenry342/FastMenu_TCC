@@ -70,7 +70,9 @@ export function EmployeeProvider({ children }: EmployeeProviderProps) {
     });
 
     if (!res.ok) {
-      throw new Error('Falha ao atualizar funcionário');
+      const err = (await res.json().catch(() => ({}))) as { error?: string };
+
+      throw new Error(err.error ?? 'Falha ao atualizar funcionário');
     }
 
     const updated: Employee = await res.json();
@@ -79,9 +81,17 @@ export function EmployeeProvider({ children }: EmployeeProviderProps) {
       current.map(employee => (employee.id === id ? updated : employee)),
     );
 
-    setCurrentEmployee(current =>
-      current && current.id === id ? updated : current,
-    );
+    const isSelfRoleChange =
+      currentEmployee?.id === id && changes.role !== undefined && changes.role !== currentEmployee.role;
+
+    if (isSelfRoleChange) {
+      await fetch('/api/employees/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+
+      setCurrentEmployee(null);
+      return;
+    }
+
+    setCurrentEmployee(current => (current && current.id === id ? updated : current));
   };
 
   const deleteEmployee = async (id: string) => {
