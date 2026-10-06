@@ -80,7 +80,14 @@ export function OrderProvider({ children }: OrderProviderProps) {
     });
 
     if (!res.ok) {
-      throw new Error('Falha ao criar pedido');
+      const err = (await res.json().catch(() => ({}))) as { error?: string; tableNumber?: number };
+      const error = new Error(err.error ?? 'Falha ao criar pedido') as Error & { tableNumber?: number };
+
+      if (err.tableNumber !== undefined) {
+        error.tableNumber = err.tableNumber;
+      }
+
+      throw error;
     }
 
     const created = reviveOrder(await res.json());

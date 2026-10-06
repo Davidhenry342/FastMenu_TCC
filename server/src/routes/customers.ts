@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
+import { requireCustomer } from '../middleware/auth';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET ?? 'fastmenu-tcc-jwt-secret-change-in-production';
@@ -54,6 +55,32 @@ router.get('/me', async (req, res) => {
   } catch {
     res.status(401).json({ error: 'Not authenticated' });
   }
+});
+
+router.get('/me/open-comanda', requireCustomer, async (req, res) => {
+  const customerId = (req as unknown as { customer?: { id: string } }).customer!.id;
+
+  const open = await prisma.comanda.findFirst({
+    where: {
+      status: 'Aberta',
+      orderItems: { some: { customerId } },
+    },
+    include: { orderItems: { select: { id: true } } },
+    orderBy: { openedAt: 'asc' },
+  });
+
+  if (!open) {
+    res.json({ comanda: null });
+    return;
+  }
+
+  res.json({
+    comanda: {
+      ...open,
+      orderItemIds: (open as unknown as { orderItems: { id: string }[] }).orderItems.map(o => o.id),
+      orderItems: undefined,
+    },
+  });
 });
 
 router.post('/', async (req, res) => {

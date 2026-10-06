@@ -89,3 +89,24 @@
     grid-template-columns: 1fr;
   }
 }
+
+.conflictButton {
+  padding: 1.2rem 2.4rem;
+
+  border: none;
+  border-radius: 0.8rem;
+
+  background: var(--primary);
+  color: var(--text-over-primary);
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: background 0.2s ease;
+}
+
+.conflictButton:hover {
+  background: var(--primary-light);
+}

@@ -2,6 +2,12 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Customer } from '../models/customer';
 
+export type CustomerOpenComanda = {
+  id: string;
+  tableNumber: number;
+  status: string;
+};
+
 type CustomerContextValue = {
   customers: Customer[];
   currentCustomer: Customer | null;
@@ -11,6 +17,7 @@ type CustomerContextValue = {
   loginByPhone: (digits: string) => Promise<Customer>;
   logout: () => Promise<void>;
   findByPhone: (digits: string) => Customer | undefined;
+  getMyOpenComanda: () => Promise<CustomerOpenComanda | null>;
 };
 
 const CustomerContext = createContext<CustomerContextValue | null>(null);
@@ -102,9 +109,21 @@ export function CustomerProvider({ children }: CustomerProviderProps) {
   const findByPhone = (digits: string) =>
     customers.find(customer => customer.phone.replace(/\D/g, '') === digits);
 
+  const getMyOpenComanda = async (): Promise<CustomerOpenComanda | null> => {
+    const res = await fetch('/api/customers/me/open-comanda', { credentials: 'include' });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const data = (await res.json()) as { comanda: CustomerOpenComanda | null };
+
+    return data.comanda;
+  };
+
   return (
     <CustomerContext.Provider
-      value={{ customers, currentCustomer, isLoading, addCustomer, login, loginByPhone, logout, findByPhone }}
+      value={{ customers, currentCustomer, isLoading, addCustomer, login, loginByPhone, logout, findByPhone, getMyOpenComanda }}
     >
       {children}
     </CustomerContext.Provider>

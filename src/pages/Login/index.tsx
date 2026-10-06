@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { FormatPhone } from '../../utils/format';
@@ -10,13 +10,42 @@ export function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mesaParam = searchParams.get('mesa');
-  const { findByPhone, addCustomer, login } = useCustomers();
+  const { findByPhone, addCustomer, login, getMyOpenComanda, currentCustomer } = useCustomers();
 
-  const navigateToCardapio = () => {
-    const suffix = mesaParam ? `?mesa=${encodeURIComponent(mesaParam)}` : '';
+  const [conflictTable, setConflictTable] = useState<number | null>(null);
+
+  const navigateToCardapio = (mesaOverride?: number) => {
+    const target = mesaOverride ?? (mesaParam ? Number(mesaParam) : undefined);
+    const suffix = target !== undefined && !Number.isNaN(target) ? `?mesa=${encodeURIComponent(String(target))}` : '';
 
     navigate(`/cardapio${suffix}`);
   };
+
+  const checkMesaConflict = async (): Promise<number | null> => {
+    try {
+      const open = await getMyOpenComanda();
+
+      if (open && mesaParam && Number(mesaParam) !== open.tableNumber) {
+        setConflictTable(open.tableNumber);
+
+        return open.tableNumber;
+      }
+
+      setConflictTable(null);
+
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    if (currentCustomer && mesaParam) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void checkMesaConflict();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCustomer, mesaParam]);
 
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
@@ -61,6 +90,13 @@ export function Login() {
 
     try {
       await login(found);
+
+      const conflict = await checkMesaConflict();
+
+      if (conflict !== null) {
+        return;
+      }
+
       navigateToCardapio();
     } catch {
       setError('Falha ao fazer login. Tente novamente.');
@@ -119,6 +155,12 @@ export function Login() {
         email: emailTrimmed,
       });
 
+      const conflict = await checkMesaConflict();
+
+      if (conflict !== null) {
+        return;
+      }
+
       navigateToCardapio();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao cadastrar.');
@@ -129,6 +171,28 @@ export function Login() {
     setStep('phone');
     setError(null);
   };
+
+  if (conflictTable !== null) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.card}>
+          <h1 className={styles.title}>Mesa ocupada</h1>
+
+          <p className={styles.subtitle}>
+            Você já possui comanda aberta na mesa {conflictTable}. Finalize antes de pedir em outra mesa.
+          </p>
+
+          <button
+            type="button"
+            className={styles.primaryButton}
+            onClick={() => navigateToCardapio(conflictTable)}
+          >
+            Ir para mesa {conflictTable}
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className={styles.page}>

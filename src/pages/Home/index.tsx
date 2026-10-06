@@ -20,10 +20,11 @@ export function Home() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mesaParam = searchParams.get('mesa');
-  const { currentCustomer, isLoading } = useCustomers();
+  const { currentCustomer, isLoading, getMyOpenComanda } = useCustomers();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isComandaOpen, setIsComandaOpen] = useState(false);
+  const [conflictTable, setConflictTable] = useState<number | null>(null);
   const { addOrderItem, orderItems } = useOrder();
   const { products } = useProducts();
   const { tables, isLoading: tablesLoading } = useTables();
@@ -43,6 +44,33 @@ export function Home() {
       navigate(`/${suffix}`, { replace: true });
     }
   }, [currentCustomer, isLoading, mesaParam, navigate]);
+
+  useEffect(() => {
+    if (!currentCustomer || isMesaMissing || isMesaInvalid) {
+      return;
+    }
+
+    let cancelled = false;
+
+    getMyOpenComanda()
+      .then(open => {
+        if (cancelled) {
+          return;
+        }
+
+        if (open && open.tableNumber !== mesaNumber) {
+          setConflictTable(open.tableNumber);
+        } else {
+          setConflictTable(null);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCustomer, mesaNumber, isMesaMissing, isMesaInvalid]);
 
   const averageWait = useMemo(
     () => averageWaitByCategory(orderItems),
@@ -89,6 +117,33 @@ export function Home() {
               Escaneie o QR Code da mesa para acessar o cardápio. Acesso sem
               mesa é inválido.
             </p>
+          </div>
+        </section>
+      </Container>
+    );
+  }
+
+  if (conflictTable !== null) {
+    return (
+      <Container>
+        <section className={styles.hero}>
+          <div className={styles.heroContent}>
+            <h1>Mesa ocupada</h1>
+
+            <p>
+              Você já possui comanda aberta na mesa {conflictTable}. Finalize
+              antes de pedir em outra mesa.
+            </p>
+
+            <div style={{ marginTop: '1.6rem' }}>
+              <button
+                type="button"
+                className={styles.conflictButton}
+                onClick={() => navigate(`/cardapio?mesa=${conflictTable}`, { replace: true })}
+              >
+                Ir para mesa {conflictTable}
+              </button>
+            </div>
           </div>
         </section>
       </Container>
@@ -216,6 +271,12 @@ export function Home() {
 
               setSelectedProduct(null);
             } catch (err) {
+              const tableNumber = (err as Error & { tableNumber?: number }).tableNumber;
+
+              if (tableNumber !== undefined) {
+                setConflictTable(tableNumber);
+              }
+
               alert(err instanceof Error ? err.message : 'Falha ao criar pedido');
             }
           }}

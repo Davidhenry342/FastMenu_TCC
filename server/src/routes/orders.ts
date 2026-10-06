@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
-import { requireEmployee, requireRole } from '../middleware/auth';
+import { requireCustomerOrEmployee, requireEmployee, requireRole } from '../middleware/auth';
 
 const router = Router();
 
@@ -32,7 +32,9 @@ router.get('/', requireEmployee, requireRole('Gerente', 'Garçom', 'Cozinheiro(a
   res.json(orders.map(mapStatusFromPrisma));
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireCustomerOrEmployee, async (req, res) => {
+  const authReq = req as unknown as { customer?: { id: string }; employee?: { id: string; role: string } };
+  const isEmployee = Boolean(authReq.employee);
   const body: any = { ...req.body };
 
   if (body.product && body.product.id) {
@@ -46,6 +48,28 @@ router.post('/', async (req, res) => {
 
   if (body.status && toPrismaStatus[body.status]) {
     body.status = toPrismaStatus[body.status];
+  }
+
+  if (!isEmployee && authReq.customer) {
+    const customerId = authReq.customer.id;
+    body.customerId = customerId;
+
+    const requestedTable = body.tableNumber !== undefined ? Number(body.tableNumber) : undefined;
+
+    if (requestedTable !== undefined && !Number.isNaN(requestedTable)) {
+      const open = await prisma.comanda.findFirst({
+        where: { status: 'Aberta', orderItems: { some: { customerId } } },
+        select: { tableNumber: true },
+      });
+
+      if (open && open.tableNumber !== requestedTable) {
+        res.status(409).json({
+          error: `Você já possui comanda aberta na mesa ${open.tableNumber}. Finalize antes de pedir em outra mesa.`,
+          tableNumber: open.tableNumber,
+        });
+        return;
+      }
+    }
   }
 
   const order = await prisma.orderItem.create({

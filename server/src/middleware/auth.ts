@@ -8,8 +8,14 @@ export type EmployeeJwtPayload = {
   role: string;
 };
 
+export type CustomerJwtPayload = {
+  sub: string;
+  role: string;
+};
+
 export type AuthRequest = Request & {
   employee?: { id: string; role: string };
+  customer?: { id: string };
 };
 
 const roleMapPrismaToDisplay: Record<string, string> = {
@@ -46,6 +52,59 @@ export function requireEmployee(req: AuthRequest, res: Response, next: NextFunct
   } catch {
     res.status(401).json({ error: 'Not authenticated' });
   }
+}
+
+export function requireCustomer(req: AuthRequest, res: Response, next: NextFunction) {
+  const token = (req as unknown as { cookies?: Record<string, string> }).cookies?.customer_token as
+    | string
+    | undefined;
+
+  if (!token) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as CustomerJwtPayload;
+
+    req.customer = { id: payload.sub };
+    next();
+  } catch {
+    res.status(401).json({ error: 'Not authenticated' });
+  }
+}
+
+export function requireCustomerOrEmployee(req: AuthRequest, res: Response, next: NextFunction) {
+  const cookies = (req as unknown as { cookies?: Record<string, string> }).cookies;
+  const customerToken = cookies?.customer_token as string | undefined;
+  const employeeToken = cookies?.employee_token as string | undefined;
+
+  if (customerToken) {
+    try {
+      const payload = jwt.verify(customerToken, JWT_SECRET) as CustomerJwtPayload;
+
+      req.customer = { id: payload.sub };
+    } catch {
+      // ignore invalid customer token, try employee
+    }
+  }
+
+  if (employeeToken) {
+    try {
+      const payload = jwt.verify(employeeToken, JWT_SECRET) as EmployeeJwtPayload;
+
+      req.employee = { id: payload.sub, role: normalizeRole(payload.role) };
+    } catch {
+      // ignore invalid employee token
+    }
+  }
+
+  if (!req.customer && !req.employee) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+
+  next();
 }
 
 export function requireRole(...allowed: string[]) {

@@ -51,6 +51,17 @@ export function ComandaProvider({ children }: ComandaProviderProps) {
       .finally(() => setIsLoading(false));
   }, []);
 
+  const parseComandaError = async (res: Response, fallback: string) => {
+    const err = (await res.json().catch(() => ({}))) as { error?: string; tableNumber?: number };
+    const error = new Error(err.error ?? fallback) as Error & { tableNumber?: number };
+
+    if (err.tableNumber !== undefined) {
+      error.tableNumber = err.tableNumber;
+    }
+
+    return error;
+  };
+
   const openComanda = async (tableId: string, tableNumber: number) => {
     const res = await fetch('/api/comandas', {
       method: 'POST',
@@ -60,12 +71,18 @@ export function ComandaProvider({ children }: ComandaProviderProps) {
     });
 
     if (!res.ok) {
-      throw new Error('Falha ao abrir comanda');
+      throw await parseComandaError(res, 'Falha ao abrir comanda');
     }
 
     const created = reviveComanda(await res.json());
 
-    setComandas(current => [...current, created]);
+    setComandas(current => {
+      if (current.some(c => c.id === created.id)) {
+        return current.map(c => (c.id === created.id ? created : c));
+      }
+
+      return [...current, created];
+    });
 
     return created;
   };
@@ -79,7 +96,7 @@ export function ComandaProvider({ children }: ComandaProviderProps) {
     });
 
     if (!res.ok) {
-      throw new Error('Falha ao adicionar pedido à comanda');
+      throw await parseComandaError(res, 'Falha ao adicionar pedido à comanda');
     }
 
     const updated = reviveComanda(await res.json());
