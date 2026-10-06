@@ -20,6 +20,7 @@ type ComandaContextValue = {
   closeComanda: (comandaId: string) => Promise<void>;
   getOpenComandaByTable: (tableNumber: number) => Comanda | undefined;
   getOpenComandasByTable: (tableNumber: number) => Comanda[];
+  markComandaClosed: (comandaId: string) => void;
   removeOrderFromComandas: (orderItemId: string) => Promise<void>;
   refreshComandas: () => Promise<void>;
   fetchComandasByTable: (tableNumber: number) => Promise<Comanda[]>;
@@ -161,6 +162,14 @@ export function ComandaProvider({ children }: ComandaProviderProps) {
   const getOpenComandasByTable = (tableNumber: number) =>
     comandas.filter(c => c.tableNumber === tableNumber && c.status === 'Aberta');
 
+  const markComandaClosed = (comandaId: string) => {
+    setComandas(current =>
+      current.map(c =>
+        c.id === comandaId ? { ...c, status: 'Fechada' as const, closedAt: new Date() } : c,
+      ),
+    );
+  };
+
   const fetchComandasByTable = async (tableNumber: number) => {
     const res = await fetch(`/api/comandas/by-table/${tableNumber}`, { credentials: 'include' });
 
@@ -170,6 +179,7 @@ export function ComandaProvider({ children }: ComandaProviderProps) {
 
     const data: any[] = await res.json();
     const revived = data.map(reviveComanda);
+    const freshIds = new Set(revived.map(c => c.id));
 
     setComandas(current => {
       const byId = new Map(current.map(c => [c.id, c]));
@@ -178,7 +188,12 @@ export function ComandaProvider({ children }: ComandaProviderProps) {
         byId.set(item.id, item);
       }
 
-      return [...byId.values()];
+      // Reconciliação: Abertas locais da mesa que o servidor não retornou foram fechadas.
+      return [...byId.values()].map(c =>
+        c.tableNumber === tableNumber && c.status === 'Aberta' && !freshIds.has(c.id)
+          ? { ...c, status: 'Fechada' as const, closedAt: new Date() }
+          : c,
+      );
     });
 
     return revived;
@@ -194,6 +209,7 @@ export function ComandaProvider({ children }: ComandaProviderProps) {
         closeComanda,
         getOpenComandaByTable,
         getOpenComandasByTable,
+        markComandaClosed,
         removeOrderFromComandas,
         refreshComandas,
         fetchComandasByTable,

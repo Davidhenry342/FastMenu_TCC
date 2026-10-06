@@ -38,6 +38,7 @@ export function Comanda({
   const {
     comandas,
     getOpenComandasByTable,
+    markComandaClosed,
     removeOrderFromComandas,
     fetchComandasByTable,
   } = useComandas();
@@ -98,17 +99,12 @@ export function Comanda({
       const opens = getOpenComandasByTable(filterTableNumber);
 
       if (opens.length === 0) {
-        return orderItems.filter(item => item.tableNumber === filterTableNumber);
+        return [];
       }
 
       const openIds = new Set(opens.flatMap(c => c.orderItemIds));
-      const byIds = orderItems.filter(item => openIds.has(item.id));
 
-      if (byIds.length > 0) {
-        return byIds;
-      }
-
-      return orderItems.filter(item => item.tableNumber === filterTableNumber);
+      return orderItems.filter(item => openIds.has(item.id));
     }
 
     const openIds = new Set(
@@ -248,6 +244,7 @@ export function Comanda({
 
     try {
       let paidCount = 0;
+      let closed = false;
 
       for (const item of displayedItems) {
         if (isCancelled(item) || isAwaiting(item)) {
@@ -267,7 +264,12 @@ export function Comanda({
             continue;
           }
 
-          await payOrderItem(item.id, { quantity: qty });
+          const result = await payOrderItem(item.id, { quantity: qty });
+
+          if (result.comandaClosed) {
+            closed = true;
+          }
+
           paidCount += 1;
         } else {
           const raw = valueSelections[item.id];
@@ -282,7 +284,12 @@ export function Comanda({
             continue;
           }
 
-          await payOrderItem(item.id, { amount: parsed });
+          const result = await payOrderItem(item.id, { amount: parsed });
+
+          if (result.comandaClosed) {
+            closed = true;
+          }
+
           paidCount += 1;
         }
       }
@@ -295,6 +302,10 @@ export function Comanda({
       setSelections({});
       setValueSelections({});
       setItemModes({});
+
+      if (closed && filterTableNumber !== undefined) {
+        getOpenComandasByTable(filterTableNumber).forEach(c => markComandaClosed(c.id));
+      }
 
       if (filterTableNumber !== undefined) {
         await fetchComandasByTable(filterTableNumber).catch(() => {});

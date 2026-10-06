@@ -190,6 +190,7 @@ export function OrderProvider({ children }: OrderProviderProps) {
 
     const data: any[] = await res.json();
     const revived = data.map(reviveOrder);
+    const freshIds = new Set(revived.map(o => o.id));
 
     setOrderItems(current => {
       const byId = new Map(current.map(o => [o.id, o]));
@@ -198,7 +199,11 @@ export function OrderProvider({ children }: OrderProviderProps) {
         byId.set(item.id, item);
       }
 
-      return [...byId.values()];
+      // Evicção: itens da mesa ausentes na resposta (comanda fechada) somem do estado.
+      // Preserva locais ainda sem comandaId (pedido em voo, add-order pendente).
+      return [...byId.values()].filter(
+        o => o.tableNumber !== tableNumber || freshIds.has(o.id) || !(o as any).comandaId,
+      );
     });
 
     return revived;
