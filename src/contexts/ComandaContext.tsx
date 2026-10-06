@@ -19,8 +19,10 @@ type ComandaContextValue = {
   addOrderToComanda: (comandaId: string, orderItemId: string) => Promise<void>;
   closeComanda: (comandaId: string) => Promise<void>;
   getOpenComandaByTable: (tableNumber: number) => Comanda | undefined;
+  getOpenComandasByTable: (tableNumber: number) => Comanda[];
   removeOrderFromComandas: (orderItemId: string) => Promise<void>;
   refreshComandas: () => Promise<void>;
+  fetchComandasByTable: (tableNumber: number) => Promise<Comanda[]>;
 };
 
 const ComandaContext = createContext<ComandaContextValue | null>(null);
@@ -156,6 +158,32 @@ export function ComandaProvider({ children }: ComandaProviderProps) {
     await fetchComandas();
   };
 
+  const getOpenComandasByTable = (tableNumber: number) =>
+    comandas.filter(c => c.tableNumber === tableNumber && c.status === 'Aberta');
+
+  const fetchComandasByTable = async (tableNumber: number) => {
+    const res = await fetch(`/api/comandas/by-table/${tableNumber}`, { credentials: 'include' });
+
+    if (!res.ok) {
+      throw new Error('Falha ao carregar comanda da mesa');
+    }
+
+    const data: any[] = await res.json();
+    const revived = data.map(reviveComanda);
+
+    setComandas(current => {
+      const byId = new Map(current.map(c => [c.id, c]));
+
+      for (const item of revived) {
+        byId.set(item.id, item);
+      }
+
+      return [...byId.values()];
+    });
+
+    return revived;
+  };
+
   return (
     <ComandaContext.Provider
       value={{
@@ -165,8 +193,10 @@ export function ComandaProvider({ children }: ComandaProviderProps) {
         addOrderToComanda,
         closeComanda,
         getOpenComandaByTable,
+        getOpenComandasByTable,
         removeOrderFromComandas,
         refreshComandas,
+        fetchComandasByTable,
       }}
     >
       {children}

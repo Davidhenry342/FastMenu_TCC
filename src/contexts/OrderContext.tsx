@@ -20,13 +20,21 @@ function reviveOrder(raw: any): OrderItem {
   };
 }
 
+export type PayOrderResult = {
+  order: OrderItem;
+  comandaClosed: boolean;
+  remainingTable: number;
+};
+
 type OrderContextValue = {
   orderItems: OrderItem[];
   isLoading: boolean;
   addOrderItem: (item: OrderItem) => Promise<void>;
   updateOrderItem: (id: string, changes: Partial<OrderItem>) => Promise<void>;
+  payOrderItem: (id: string, payment: { amount?: number; quantity?: number }) => Promise<PayOrderResult>;
   deleteOrderItem: (id: string) => Promise<void>;
   refreshOrders: () => Promise<void>;
+  fetchOrdersByTable: (tableNumber: number) => Promise<OrderItem[]>;
 };
 
 const OrderContext = createContext<OrderContextValue | null>(null);
@@ -138,13 +146,67 @@ export function OrderProvider({ children }: OrderProviderProps) {
     setOrderItems(current => current.filter(item => item.id !== id));
   };
 
+  const payOrderItem = async (id: string, payment: { amount?: number; quantity?: number }) => {
+    const res = await fetch(`/api/orders/${id}/pay`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payment),
+    });
+
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({}))) as { error?: string; tableNumber?: number };
+      const error = new Error(err.error ?? 'Falha ao pagar pedido') as Error & { tableNumber?: number };
+
+      if (err.tableNumber !== undefined) {
+        error.tableNumber = err.tableNumber;
+      }
+
+      throw error;
+    }
+
+    const data = (await res.json()) as { order: any; comandaClosed: boolean; remainingTable: number };
+    const revived = reviveOrder(data.order);
+
+    setOrderItems(current =>
+      current.some(item => item.id === revived.id)
+        ? current.map(item => (item.id === revived.id ? revived : item))
+        : [...current, revived],
+    );
+
+    return { order: revived, comandaClosed: data.comandaClosed, remainingTable: data.remainingTable };
+  };
+
   const refreshOrders = async () => {
     await fetchOrders();
   };
 
+  const fetchOrdersByTable = async (tableNumber: number) => {
+    const res = await fetch(`/api/orders/by-table/${tableNumber}`, { credentials: 'include' });
+
+    if (!res.ok) {
+      throw new Error('Falha ao carregar pedidos da mesa');
+    }
+
+    const data: any[] = await res.json();
+    const revived = data.map(reviveOrder);
+
+    setOrderItems(current => {
+      const byId = new Map(current.map(o => [o.id, o]));
+
+      for (const item of revived) {
+        byId.set(item.id, item);
+      }
+
+      return [...byId.values()];
+    });
+
+    return revived;
+  };
+
   return (
     <OrderContext.Provider
-      value={{ orderItems, isLoading, addOrderItem, updateOrderItem, deleteOrderItem, refreshOrders }}
+      value={{ orderItems, isLoading, addOrderItem, updateOrderItem, payOrderItem, deleteOrderItem, refreshOrders, fetchOrdersByTable }}
     >
       {children}
     </OrderContext.Provider>

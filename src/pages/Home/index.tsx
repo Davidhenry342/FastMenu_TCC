@@ -25,10 +25,10 @@ export function Home() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isComandaOpen, setIsComandaOpen] = useState(false);
   const [conflictTable, setConflictTable] = useState<number | null>(null);
-  const { addOrderItem, orderItems } = useOrder();
+  const { addOrderItem, orderItems, fetchOrdersByTable } = useOrder();
   const { products } = useProducts();
   const { tables, isLoading: tablesLoading } = useTables();
-  const { openComanda, addOrderToComanda, getOpenComandaByTable } =
+  const { openComanda, addOrderToComanda, getOpenComandaByTable, fetchComandasByTable } =
     useComandas();
 
   const mesaNumber = mesaParam ? Number(mesaParam) : NaN;
@@ -65,6 +65,9 @@ export function Home() {
         }
       })
       .catch(() => {});
+
+    fetchComandasByTable(mesaNumber).catch(() => {});
+    fetchOrdersByTable(mesaNumber).catch(() => {});
 
     return () => {
       cancelled = true;

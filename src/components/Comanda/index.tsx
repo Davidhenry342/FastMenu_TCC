@@ -33,18 +33,20 @@ export function Comanda({
   tableNumber: filterTableNumber,
   canDelete = false,
 }: ComandaProps) {
-  const { orderItems, updateOrderItem, deleteOrderItem } = useOrder();
+  const { orderItems, payOrderItem, deleteOrderItem, fetchOrdersByTable } = useOrder();
   const { customers } = useCustomers();
   const {
     comandas,
-    getOpenComandaByTable,
-    closeComanda,
+    getOpenComandasByTable,
     removeOrderFromComandas,
+    fetchComandasByTable,
   } = useComandas();
 
   const [selections, setSelections] = useState<Record<string, number>>({});
   const [valueSelections, setValueSelections] = useState<Record<string, string>>({});
   const [itemModes, setItemModes] = useState<Record<string, PaymentMode>>({});
+  const [isPaying, setIsPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -93,13 +95,20 @@ export function Comanda({
 
   const displayedItems = (() => {
     if (filterTableNumber !== undefined) {
-      const open = getOpenComandaByTable(filterTableNumber);
+      const opens = getOpenComandasByTable(filterTableNumber);
 
-      if (!open) {
-        return [];
+      if (opens.length === 0) {
+        return orderItems.filter(item => item.tableNumber === filterTableNumber);
       }
 
-      return orderItems.filter(item => open.orderItemIds.includes(item.id));
+      const openIds = new Set(opens.flatMap(c => c.orderItemIds));
+      const byIds = orderItems.filter(item => openIds.has(item.id));
+
+      if (byIds.length > 0) {
+        return byIds;
+      }
+
+      return orderItems.filter(item => item.tableNumber === filterTableNumber);
     }
 
     const openIds = new Set(
@@ -234,96 +243,70 @@ export function Comanda({
   };
 
   const handlePay = async () => {
-    const updatedMap = new Map<string, OrderItem>();
+    setIsPaying(true);
+    setPayError(null);
 
-    for (const item of displayedItems) {
-      if (isCancelled(item) || isAwaiting(item)) {
-        continue;
-      }
+    try {
+      let paidCount = 0;
 
-      if (
-        filterTableNumber !== undefined &&
-        item.tableNumber !== filterTableNumber
-      ) {
-        continue;
-      }
-
-      const mode = itemModes[item.id] ?? 'quantity';
-
-      if (mode === 'quantity') {
-        const qty = selections[item.id];
-
-        if (!qty) {
+      for (const item of displayedItems) {
+        if (isCancelled(item) || isAwaiting(item)) {
           continue;
         }
 
-        const deltaAmount = Math.min(
-          item.product.price * qty,
-          getRemainingAmount(item),
-        );
-        const nextPaidAmount = getPaidAmount(item) + deltaAmount;
-        const nextPaidQuantity = (item.paidQuantity ?? 0) + qty;
-
-        await updateOrderItem(item.id, {
-          paidAmount: nextPaidAmount,
-          paidQuantity: nextPaidQuantity,
-        });
-        updatedMap.set(item.id, {
-          ...item,
-          paidAmount: nextPaidAmount,
-          paidQuantity: nextPaidQuantity,
-        });
-      } else {
-        const raw = valueSelections[item.id];
-
-        if (!raw) {
+        if (filterTableNumber !== undefined && item.tableNumber !== filterTableNumber) {
           continue;
         }
 
-        const parsed = ParseCurrency(raw);
+        const mode = itemModes[item.id] ?? 'quantity';
 
-        if (parsed <= 0) {
-          continue;
+        if (mode === 'quantity') {
+          const qty = selections[item.id];
+
+          if (!qty) {
+            continue;
+          }
+
+          await payOrderItem(item.id, { quantity: qty });
+          paidCount += 1;
+        } else {
+          const raw = valueSelections[item.id];
+
+          if (!raw) {
+            continue;
+          }
+
+          const parsed = ParseCurrency(raw);
+
+          if (parsed <= 0) {
+            continue;
+          }
+
+          await payOrderItem(item.id, { amount: parsed });
+          paidCount += 1;
         }
-
-        const remaining = getRemainingAmount(item);
-        const delta = Math.min(parsed, remaining);
-        const nextPaidAmount = getPaidAmount(item) + delta;
-
-        await updateOrderItem(item.id, { paidAmount: nextPaidAmount });
-        updatedMap.set(item.id, { ...item, paidAmount: nextPaidAmount });
-      }
-    }
-
-    setSelections({});
-    setValueSelections({});
-    setItemModes({});
-
-    const targetTableNumber = filterTableNumber ?? 1;
-    const openComanda = getOpenComandaByTable(targetTableNumber);
-
-    if (!openComanda) {
-      return;
-    }
-
-    const remainingForTable = orderItems.reduce((sum, item) => {
-      if (item.tableNumber !== targetTableNumber) {
-        return sum;
       }
 
-      if (isCancelled(item) || isAwaiting(item)) {
-        return sum;
+      if (paidCount === 0) {
+        setPayError('Nenhum item válido para pagamento.');
+        return;
       }
 
-      const paid = updatedMap.has(item.id)
-        ? getPaidAmount(updatedMap.get(item.id)!)
-        : getPaidAmount(item);
+      setSelections({});
+      setValueSelections({});
+      setItemModes({});
 
-      return sum + Math.max(0, getTotalPrice(item) - paid);
-    }, 0);
+      if (filterTableNumber !== undefined) {
+        await fetchComandasByTable(filterTableNumber).catch(() => {});
+        await fetchOrdersByTable(filterTableNumber).catch(() => {});
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Falha ao pagar. Tente novamente.';
 
-    if (remainingForTable <= 0.01) {
-      await closeComanda(openComanda.id);
+      setPayError(message);
+      alert(message);
+    } finally {
+      setIsPaying(false);
     }
   };
 
@@ -592,13 +575,15 @@ export function Comanda({
             </span>
           </div>
 
+          {payError && <p className={styles.error}>{payError}</p>}
+
           <button
             type="button"
             className={styles.payButton}
             onClick={handlePay}
-            disabled={!hasSelection}
+            disabled={!hasSelection || isPaying}
           >
-            Pagar
+            {isPaying ? 'Pagando...' : 'Pagar'}
           </button>
 
           <button type="button" className={styles.backButton} onClick={onClose}>

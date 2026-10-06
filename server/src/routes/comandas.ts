@@ -20,6 +20,29 @@ router.get('/', requireEmployee, requireRole('Gerente', 'Garçom', 'Caixa', 'Coz
   res.json(mapped);
 });
 
+router.get('/by-table/:tableNumber', requireCustomerOrEmployee, async (req, res) => {
+  const tableNumber = Number(req.params.tableNumber);
+
+  if (Number.isNaN(tableNumber)) {
+    res.status(400).json({ error: 'tableNumber inválido' });
+    return;
+  }
+
+  const comandas = await prisma.comanda.findMany({
+    where: { tableNumber, status: 'Aberta' },
+    include: { orderItems: { select: { id: true } } },
+    orderBy: { openedAt: 'asc' },
+  });
+
+  res.json(
+    comandas.map(c => ({
+      ...c,
+      orderItemIds: (c as any).orderItems.map((o: any) => o.id),
+      orderItems: undefined,
+    })),
+  );
+});
+
 router.post('/', requireCustomerOrEmployee, async (req, res) => {
   const authReq = req as unknown as { customer?: { id: string }; employee?: { id: string; role: string } };
 
@@ -55,6 +78,21 @@ router.post('/', requireCustomerOrEmployee, async (req, res) => {
       res.status(200).json({
         ...myOpen,
         orderItemIds: (myOpen as unknown as { orderItems: { id: string }[] }).orderItems.map(o => o.id),
+        orderItems: undefined,
+      });
+      return;
+    }
+
+    const sharedOpen = await prisma.comanda.findFirst({
+      where: { tableNumber: requestedTableNumber, status: 'Aberta' },
+      include: { orderItems: { select: { id: true } } },
+      orderBy: { openedAt: 'asc' },
+    });
+
+    if (sharedOpen) {
+      res.status(200).json({
+        ...sharedOpen,
+        orderItemIds: (sharedOpen as unknown as { orderItems: { id: string }[] }).orderItems.map(o => o.id),
         orderItems: undefined,
       });
       return;
@@ -110,11 +148,6 @@ router.post('/:id/add-order', requireCustomerOrEmployee, async (req, res) => {
 
     if (!order) {
       res.status(404).json({ error: 'Pedido não encontrado.' });
-      return;
-    }
-
-    if (order.customerId && order.customerId !== customerId) {
-      res.status(403).json({ error: 'Acesso negado' });
       return;
     }
 

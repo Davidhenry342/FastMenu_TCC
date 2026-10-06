@@ -32,6 +32,35 @@ router.get('/', requireEmployee, requireRole('Gerente', 'Garçom', 'Cozinheiro(a
   res.json(orders.map(mapStatusFromPrisma));
 });
 
+router.get('/by-table/:tableNumber', requireCustomerOrEmployee, async (req, res) => {
+  const tableNumber = Number(req.params.tableNumber);
+
+  if (Number.isNaN(tableNumber)) {
+    res.status(400).json({ error: 'tableNumber inválido' });
+    return;
+  }
+
+  const openComandas = await prisma.comanda.findMany({
+    where: { tableNumber, status: 'Aberta' },
+    select: { id: true },
+  });
+
+  const comandaIds = openComandas.map(c => c.id);
+
+  if (comandaIds.length === 0) {
+    res.json([]);
+    return;
+  }
+
+  const orders = await prisma.orderItem.findMany({
+    where: { comandaId: { in: comandaIds } },
+    include: { product: true, customer: true },
+    orderBy: { orderedAt: 'asc' },
+  });
+
+  res.json(orders.map(mapStatusFromPrisma));
+});
+
 router.post('/', requireCustomerOrEmployee, async (req, res) => {
   const authReq = req as unknown as { customer?: { id: string }; employee?: { id: string; role: string } };
   const isEmployee = Boolean(authReq.employee);
@@ -78,6 +107,132 @@ router.post('/', requireCustomerOrEmployee, async (req, res) => {
   });
 
   res.status(201).json(mapStatusFromPrisma(order as any));
+});
+
+router.post('/:id/pay', requireCustomerOrEmployee, async (req, res) => {
+  const authReq = req as unknown as { customer?: { id: string }; employee?: { id: string; role: string } };
+  const body = req.body as { amount?: unknown; quantity?: unknown };
+  const rawAmount = typeof body.amount === 'number' ? body.amount : Number(body.amount ?? NaN);
+  const rawQty = typeof body.quantity === 'number' ? body.quantity : Number(body.quantity ?? NaN);
+  const amount = Number.isFinite(rawAmount) ? Math.round(rawAmount * 100) / 100 : NaN;
+  const quantity = Number.isInteger(rawQty) ? rawQty : Number.isFinite(rawQty) ? Math.floor(rawQty) : NaN;
+  const hasAmount = Number.isFinite(amount) && amount > 0;
+  const hasQuantity = Number.isInteger(quantity) && quantity > 0;
+
+  if (!hasAmount && !hasQuantity) {
+    res.status(400).json({ error: 'Informe amount ou quantity maior que zero.' });
+    return;
+  }
+
+  const existing = (await prisma.orderItem.findUnique({
+    where: { id: req.params.id },
+    include: { product: true, comanda: true },
+  })) as any;
+
+  if (!existing) {
+    res.status(404).json({ error: 'Pedido não encontrado.' });
+    return;
+  }
+
+  const displayStatus = fromPrismaStatus[existing.status as string] ?? (existing.status as string);
+
+  if (displayStatus === 'Cancelado' || displayStatus === 'Aguardando confirmação') {
+    res.status(409).json({ error: 'Este item ainda não pode ser pago.' });
+    return;
+  }
+
+  if (!existing.comanda || (existing.comanda as { status: string }).status !== 'Aberta') {
+    res.status(409).json({ error: 'Comanda não está aberta.' });
+    return;
+  }
+
+  if (!authReq.employee && authReq.customer) {
+    const customerId = authReq.customer.id;
+    const myOpen = await prisma.comanda.findFirst({
+      where: { status: 'Aberta', orderItems: { some: { customerId } } },
+      select: { tableNumber: true },
+    });
+
+    if (myOpen && existing.tableNumber !== null && myOpen.tableNumber !== existing.tableNumber) {
+      res.status(409).json({
+        error: `Você já possui comanda aberta na mesa ${myOpen.tableNumber}. Finalize antes de pagar em outra mesa.`,
+        tableNumber: myOpen.tableNumber,
+      });
+      return;
+    }
+  } else if (!authReq.employee && !authReq.customer) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+
+  const price = Number(existing.product.price);
+  const paidSoFar = existing.paidAmount !== null && existing.paidAmount !== undefined ? Number(existing.paidAmount) : 0;
+  const total = price * existing.quantity;
+  const remaining = Math.max(0, Math.round((total - paidSoFar) * 100) / 100);
+
+  if (remaining <= 0.009) {
+    res.status(409).json({ error: 'Item já pago.' });
+    return;
+  }
+
+  let deltaAmount: number;
+  let deltaQty = 0;
+
+  if (hasQuantity) {
+    const maxQty = Math.ceil(remaining / price - 1e-9);
+    const qty = Math.min(quantity, maxQty);
+    deltaAmount = Math.min(Math.round(price * qty * 100) / 100, remaining);
+    deltaQty = qty;
+  } else {
+    deltaAmount = Math.min(amount, remaining);
+  }
+
+  if (deltaAmount <= 0) {
+    res.status(409).json({ error: 'Item já pago.' });
+    return;
+  }
+
+  const updated = await prisma.orderItem.update({
+    where: { id: existing.id },
+    data: {
+      paidAmount: paidSoFar > 0 ? { increment: deltaAmount } : deltaAmount,
+      ...(deltaQty > 0 ? { paidQuantity: { increment: deltaQty } } : {}),
+    },
+    include: { product: true, customer: true },
+  });
+
+  const comandaId = existing.comandaId;
+  let comandaClosed = false;
+  let remainingTable = 0;
+
+  if (comandaId) {
+    const siblings = await prisma.orderItem.findMany({
+      where: { comandaId },
+      include: { product: true },
+    });
+
+    remainingTable = siblings.reduce((sum, item) => {
+      const itemStatus = fromPrismaStatus[item.status as string] ?? (item.status as string);
+      if (itemStatus === 'Cancelado' || itemStatus === 'Aguardando confirmação') {
+        return sum;
+      }
+      const itemTotal = Number(item.product.price) * item.quantity;
+      const itemPaid = item.paidAmount !== null && item.paidAmount !== undefined ? Number(item.paidAmount) : 0;
+      return sum + Math.max(0, itemTotal - itemPaid);
+    }, 0);
+
+    remainingTable = Math.round(remainingTable * 100) / 100;
+
+    if (remainingTable <= 0.01) {
+      await prisma.comanda.update({
+        where: { id: comandaId },
+        data: { status: 'Fechada', closedAt: new Date() },
+      });
+      comandaClosed = true;
+    }
+  }
+
+  res.json({ order: mapStatusFromPrisma(updated as any), comandaClosed, remainingTable });
 });
 
 router.put('/:id', requireEmployee, requireRole('Gerente', 'Garçom', 'Cozinheiro(a)', 'Caixa'), async (req, res) => {
