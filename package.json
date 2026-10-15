@@ -8,6 +8,8 @@
     "dev:full": "concurrently \"npm --prefix server run dev\" \"npm run dev\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
     "preview": "vite preview",
     "db:generate": "prisma generate && npx --prefix server prisma generate && xcopy /E /I node_modules\\.prisma server\\node_modules\\.prisma /Y >nul && xcopy /E /I node_modules\\@prisma\\client server\\node_modules\\@prisma\\client /Y >nul",
     "db:migrate": "prisma migrate dev",
@@ -32,16 +34,19 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "@vitest/coverage-v8": "^5.0.4",
     "babel-plugin-react-compiler": "^1.0.0",
     "concurrently": "^10.0.5",
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
+    "jsdom": "^29.1.1",
     "prisma": "^6.19.3",
     "tsx": "^4.23.13",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.65.0",
-    "vite": "^8.2.0"
+    "vite": "^8.2.0",
+    "vitest": "^5.0.4"
   }
 }
