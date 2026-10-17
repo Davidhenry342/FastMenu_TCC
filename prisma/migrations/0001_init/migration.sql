@@ -15,7 +15,7 @@ CREATE TABLE `products` (
     `price` DECIMAL(10, 2) NOT NULL,
     `preparationTime` INTEGER NOT NULL,
     `categoryId` VARCHAR(191) NOT NULL,
-    `imageUrl` VARCHAR(191) NULL,
+    `imageUrl` VARCHAR(500) NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -24,7 +24,6 @@ CREATE TABLE `products` (
 CREATE TABLE `tables` (
     `id` VARCHAR(191) NOT NULL,
     `number` INTEGER NOT NULL,
-    `status` ENUM('Disponível', 'Ocupada') NOT NULL,
 
     UNIQUE INDEX `tables_number_key`(`number`),
     PRIMARY KEY (`id`)
@@ -88,6 +87,30 @@ CREATE TABLE `order_items` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `payments` (
+    `id` VARCHAR(191) NOT NULL,
+    `provider` VARCHAR(191) NOT NULL DEFAULT 'mercadopago',
+    `mpPreferenceId` VARCHAR(191) NOT NULL,
+    `mpPaymentId` VARCHAR(191) NULL,
+    `externalReference` VARCHAR(191) NOT NULL,
+    `orderItemId` VARCHAR(191) NULL,
+    `comandaId` VARCHAR(191) NULL,
+    `amount` DECIMAL(10, 2) NOT NULL,
+    `status` ENUM('pending', 'approved', 'rejected', 'cancelled', 'refunded') NOT NULL DEFAULT 'pending',
+    `method` VARCHAR(191) NULL,
+    `rawPayload` JSON NULL,
+    `paidAt` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `payments_mpPreferenceId_key`(`mpPreferenceId`),
+    UNIQUE INDEX `payments_mpPaymentId_key`(`mpPaymentId`),
+    INDEX `payments_externalReference_idx`(`externalReference`),
+    INDEX `payments_status_idx`(`status`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `products` ADD CONSTRAINT `products_categoryId_fkey` FOREIGN KEY (`categoryId`) REFERENCES `categories`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -102,3 +125,9 @@ ALTER TABLE `order_items` ADD CONSTRAINT `order_items_customerId_fkey` FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE `order_items` ADD CONSTRAINT `order_items_comandaId_fkey` FOREIGN KEY (`comandaId`) REFERENCES `comandas`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `payments` ADD CONSTRAINT `payments_orderItemId_fkey` FOREIGN KEY (`orderItemId`) REFERENCES `order_items`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `payments` ADD CONSTRAINT `payments_comandaId_fkey` FOREIGN KEY (`comandaId`) REFERENCES `comandas`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

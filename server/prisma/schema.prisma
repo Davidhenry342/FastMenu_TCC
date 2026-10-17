@@ -32,6 +32,14 @@ enum ComandaStatus {
   Fechada
 }
 
+enum PaymentStatus {
+  pending
+  approved
+  rejected
+  cancelled
+  refunded
+}
+
 model Category {
   id       String    @id @default(cuid())
   name     String    @unique
@@ -95,6 +103,7 @@ model Comanda {
   openedAt    DateTime       @default(now())
   closedAt    DateTime?
   orderItems  OrderItem[]
+  payments    Payment[]
 
   @@map("comandas")
 }
@@ -114,6 +123,30 @@ model OrderItem {
   customer      Customer?   @relation(fields: [customerId], references: [id])
   comandaId     String?
   comanda       Comanda?    @relation(fields: [comandaId], references: [id])
+  payments      Payment[]
 
   @@map("order_items")
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  provider          String        @default("mercadopago")
+  mpPreferenceId    String        @unique
+  mpPaymentId       String?       @unique
+  externalReference String
+  orderItemId       String?
+  orderItem         OrderItem?    @relation(fields: [orderItemId], references: [id])
+  comandaId         String?
+  comanda           Comanda?      @relation(fields: [comandaId], references: [id])
+  amount            Decimal       @db.Decimal(10, 2)
+  status            PaymentStatus @default(pending)
+  method            String?
+  rawPayload        Json?
+  paidAt            DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([externalReference])
+  @@index([status])
+  @@map("payments")
 }

@@ -1,1 +1,1 @@
-export const DefaultProductImage = '/uploads/products/default.jpg';
+export const DefaultProductImage = '/default.jpg';

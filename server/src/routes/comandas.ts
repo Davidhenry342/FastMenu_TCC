@@ -127,7 +127,7 @@ router.post('/:id/add-order', requireCustomerOrEmployee, async (req, res) => {
   if (!authReq.employee && authReq.customer) {
     const customerId = authReq.customer.id;
     const target = await prisma.comanda.findUnique({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       select: { id: true, tableNumber: true, status: true },
     });
 
@@ -177,11 +177,11 @@ router.post('/:id/add-order', requireCustomerOrEmployee, async (req, res) => {
 
   await prisma.orderItem.update({
     where: { id: orderItemId },
-    data: { comandaId: req.params.id },
+    data: { comandaId: String(req.params.id) },
   });
 
   const comanda = await prisma.comanda.findUnique({
-    where: { id: req.params.id },
+    where: { id: String(req.params.id) },
     include: { orderItems: { select: { id: true } } },
   });
 
@@ -206,7 +206,7 @@ router.post('/:id/remove-order', requireEmployee, requireRole('Gerente', 'Garço
   });
 
   const comanda = await prisma.comanda.findUnique({
-    where: { id: req.params.id },
+    where: { id: String(req.params.id) },
     include: { orderItems: { select: { id: true } } },
   });
 
@@ -224,7 +224,7 @@ router.post('/:id/remove-order', requireEmployee, requireRole('Gerente', 'Garço
 
 router.post('/:id/close', requireEmployee, requireRole('Gerente', 'Garçom', 'Caixa'), async (req, res) => {
   const comanda = await prisma.comanda.update({
-    where: { id: req.params.id },
+    where: { id: String(req.params.id) },
     data: { status: 'Fechada', closedAt: new Date() },
     include: { orderItems: { select: { id: true } } },
   });
@@ -238,7 +238,7 @@ router.post('/:id/close', requireEmployee, requireRole('Gerente', 'Garçom', 'Ca
 
 router.put('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => {
   const comanda = await prisma.comanda.update({
-    where: { id: req.params.id },
+    where: { id: String(req.params.id) },
     data: req.body,
     include: { orderItems: { select: { id: true } } },
   });

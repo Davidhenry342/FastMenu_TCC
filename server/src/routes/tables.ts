@@ -32,7 +32,7 @@ router.put('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => 
   const { status: _status, ...data } = req.body as Record<string, unknown>;
 
   const table = await prisma.restaurantTable.update({
-    where: { id: req.params.id },
+    where: { id: String(req.params.id) },
     data: data as any,
   });
 
@@ -45,7 +45,7 @@ router.put('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => 
 });
 
 router.delete('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => {
-  await prisma.restaurantTable.delete({ where: { id: req.params.id } });
+  await prisma.restaurantTable.delete({ where: { id: String(req.params.id) } });
 
   res.status(204).end();
 });

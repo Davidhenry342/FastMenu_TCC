@@ -71,13 +71,13 @@ router.put('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => 
     delete data.password;
   }
 
-  const employee = await prisma.employee.update({ where: { id: req.params.id }, data: data as never });
+  const employee = await prisma.employee.update({ where: { id: String(req.params.id) }, data: data as never });
 
   res.json({ ...employee, role: normalizeRole(employee.role as string) });
 });
 
 router.delete('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => {
-  await prisma.employee.delete({ where: { id: req.params.id } });
+  await prisma.employee.delete({ where: { id: String(req.params.id) } });
 
   res.status(204).end();
 });
@@ -97,7 +97,7 @@ router.post('/login', async (req, res) => {
   res.cookie('employee_token', token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: false,
+    secure: process.env.NODE_ENV === 'production',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 

@@ -1,27 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
+import { displayStatusOf, mapStatusFromPrisma, settleOrderItemPayment, toPrismaStatus } from '../lib/payments';
 import { requireCustomerOrEmployee, requireEmployee, requireRole } from '../middleware/auth';
 
 const router = Router();
-
-const toPrismaStatus: Record<string, string> = {
-  'Em produção': 'Em_produção',
-  'Aguardando confirmação': 'Aguardando_confirmacao',
-  Cancelado: 'Cancelado',
-  Entregue: 'Entregue',
-};
-
-const fromPrismaStatus: Record<string, string> = {
-  Em_produção: 'Em produção',
-  Aguardando_confirmacao: 'Aguardando confirmação',
-  Cancelado: 'Cancelado',
-  Entregue: 'Entregue',
-};
-
-function mapStatusFromPrisma<T extends { status: string }>(item: T): T {
-  return { ...item, status: fromPrismaStatus[item.status] ?? item.status };
-}
 
 router.get('/', requireEmployee, requireRole('Gerente', 'Garçom', 'Cozinheiro(a)', 'Caixa'), async (_req, res) => {
   const orders = await prisma.orderItem.findMany({
@@ -125,7 +108,7 @@ router.post('/:id/pay', requireCustomerOrEmployee, async (req, res) => {
   }
 
   const existing = (await prisma.orderItem.findUnique({
-    where: { id: req.params.id },
+    where: { id: String(req.params.id) },
     include: { product: true, comanda: true },
   })) as any;
 
@@ -134,7 +117,7 @@ router.post('/:id/pay', requireCustomerOrEmployee, async (req, res) => {
     return;
   }
 
-  const displayStatus = fromPrismaStatus[existing.status as string] ?? (existing.status as string);
+  const displayStatus = displayStatusOf(existing as { status: string });
 
   if (displayStatus === 'Cancelado' || displayStatus === 'Aguardando confirmação') {
     res.status(409).json({ error: 'Este item ainda não pode ser pago.' });
@@ -192,47 +175,13 @@ router.post('/:id/pay', requireCustomerOrEmployee, async (req, res) => {
     return;
   }
 
-  const updated = await prisma.orderItem.update({
-    where: { id: existing.id },
-    data: {
-      paidAmount: paidSoFar > 0 ? { increment: deltaAmount } : deltaAmount,
-      ...(deltaQty > 0 ? { paidQuantity: { increment: deltaQty } } : {}),
-    },
-    include: { product: true, customer: true },
+  const { order, comandaClosed, remainingTable } = await settleOrderItemPayment({
+    orderItemId: existing.id,
+    deltaAmount,
+    deltaQty,
   });
 
-  const comandaId = existing.comandaId;
-  let comandaClosed = false;
-  let remainingTable = 0;
-
-  if (comandaId) {
-    const siblings = await prisma.orderItem.findMany({
-      where: { comandaId },
-      include: { product: true },
-    });
-
-    remainingTable = siblings.reduce((sum, item) => {
-      const itemStatus = fromPrismaStatus[item.status as string] ?? (item.status as string);
-      if (itemStatus === 'Cancelado' || itemStatus === 'Aguardando confirmação') {
-        return sum;
-      }
-      const itemTotal = Number(item.product.price) * item.quantity;
-      const itemPaid = item.paidAmount !== null && item.paidAmount !== undefined ? Number(item.paidAmount) : 0;
-      return sum + Math.max(0, itemTotal - itemPaid);
-    }, 0);
-
-    remainingTable = Math.round(remainingTable * 100) / 100;
-
-    if (remainingTable <= 0.01) {
-      await prisma.comanda.update({
-        where: { id: comandaId },
-        data: { status: 'Fechada', closedAt: new Date() },
-      });
-      comandaClosed = true;
-    }
-  }
-
-  res.json({ order: mapStatusFromPrisma(updated as any), comandaClosed, remainingTable });
+  res.json({ order, comandaClosed, remainingTable });
 });
 
 router.put('/:id', requireEmployee, requireRole('Gerente', 'Garçom', 'Cozinheiro(a)', 'Caixa'), async (req, res) => {
@@ -252,7 +201,7 @@ router.put('/:id', requireEmployee, requireRole('Gerente', 'Garçom', 'Cozinheir
   }
 
   const order = await prisma.orderItem.update({
-    where: { id: req.params.id },
+    where: { id: String(req.params.id) },
     data: body,
     include: { product: true },
   });
@@ -261,7 +210,7 @@ router.put('/:id', requireEmployee, requireRole('Gerente', 'Garçom', 'Cozinheir
 });
 
 router.delete('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => {
-  await prisma.orderItem.delete({ where: { id: req.params.id } });
+  await prisma.orderItem.delete({ where: { id: String(req.params.id) } });
 
   res.status(204).end();
 });

@@ -70,7 +70,7 @@ router.put('/:id', requireEmployee, requireRole('Gerente'), upload.single('image
   const body = req.body as Record<string, string>;
   const file = (req as any).file as Express.Multer.File | undefined;
 
-  const existing = await prisma.product.findUnique({ where: { id: req.params.id } });
+  const existing = await prisma.product.findUnique({ where: { id: String(req.params.id) } });
 
   if (!existing) {
     res.status(404).json({ error: 'Produto não encontrado' });
@@ -117,7 +117,7 @@ router.put('/:id', requireEmployee, requireRole('Gerente'), upload.single('image
   Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
 
   const product = await prisma.product.update({
-    where: { id: req.params.id },
+    where: { id: String(req.params.id) },
     data,
   });
 
@@ -125,7 +125,7 @@ router.put('/:id', requireEmployee, requireRole('Gerente'), upload.single('image
 });
 
 router.delete('/:id', requireEmployee, requireRole('Gerente'), async (req, res) => {
-  const existing = await prisma.product.findUnique({ where: { id: req.params.id } });
+  const existing = await prisma.product.findUnique({ where: { id: String(req.params.id) } });
 
   if (existing?.imageUrl && existing.imageUrl.startsWith('/uploads/')) {
     const oldPath = path.join(__dirname, '../../', existing.imageUrl);
@@ -133,7 +133,7 @@ router.delete('/:id', requireEmployee, requireRole('Gerente'), async (req, res) 
     fs.unlink(oldPath, () => {});
   }
 
-  await prisma.product.delete({ where: { id: req.params.id } });
+  await prisma.product.delete({ where: { id: String(req.params.id) } });
 
   res.status(204).end();
 });
