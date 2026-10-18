@@ -278,6 +278,7 @@ export function Mesas() {
         <Comanda
           tableNumber={comandaTableNumber}
           canDelete
+          variant="employee"
           onClose={() => setComandaTableNumber(null)}
         />
       )}

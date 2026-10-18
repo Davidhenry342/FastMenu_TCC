@@ -1,4 +1,5 @@
-import { MercadoPagoConfig, Payment, Preference, WebhookSignatureValidator } from 'mercadopago';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { MercadoPagoConfig, Payment, WebhookSignatureValidator } from 'mercadopago';
 
 const PLACEHOLDER_TOKENS = new Set(['', 'sua_access_token_aqui', 'TEST-SEU_ACCESS_TOKEN_AQUI']);
 
@@ -56,57 +57,57 @@ export function getClient(): MercadoPagoConfig {
   return cachedClient;
 }
 
-export type CreatePreferenceInput = {
-  orderItemId: string;
-  title: string;
-  quantity: number;
-  unitPrice: number;
-  payerEmail?: string;
+export type CreatePixPaymentInput = {
+  amount: number;
+  description: string;
+  externalReference: string;
+  payerEmail: string;
   notificationUrl?: string;
-  backUrls?: { success: string; failure: string; pending: string };
+  expiresAt?: Date;
 };
 
-export type CreatePreferenceResult = {
-  preferenceId: string;
-  initPoint: string;
+export type CreatePixPaymentResult = {
+  paymentId: string;
+  status: PaymentRecordStatus;
+  qrCode: string;
+  qrCodeBase64: string;
+  expiresAt: string | null;
 };
 
-export async function createPreference(input: CreatePreferenceInput): Promise<CreatePreferenceResult> {
-  const preference = new Preference(getClient());
+export function extractPixTransaction(result: any): CreatePixPaymentResult {
+  const transactionData = result?.point_of_interaction?.transaction_data;
+  const qrCode = transactionData?.qr_code as string | undefined;
+  const qrCodeBase64 = transactionData?.qr_code_base64 as string | undefined;
 
-  const result = await preference.create({
-    body: {
-      items: [
-        {
-          id: input.orderItemId,
-          title: input.title,
-          quantity: input.quantity,
-          unit_price: input.unitPrice,
-          currency_id: 'BRL',
-        },
-      ],
-      external_reference: input.orderItemId,
-      notification_url: input.notificationUrl,
-      back_urls: input.backUrls,
-      auto_return:
-        input.backUrls && input.backUrls.success.startsWith('https') ? 'approved' : undefined,
-      statement_descriptor: 'FASTMENU',
-      metadata: { orderItemId: input.orderItemId },
-      payer: input.payerEmail ? { email: input.payerEmail } : undefined,
-    },
-  });
-
-  const preferenceId = result.id;
-  const initPoint =
-    (isTestCredential() ? result.sandbox_init_point : undefined) ??
-    result.init_point ??
-    result.sandbox_init_point;
-
-  if (!preferenceId || !initPoint) {
-    throw new Error('MercadoPago não retornou id/init_point da preferência.');
+  if (result?.id === undefined || result.id === null || !qrCode) {
+    throw new Error('MercadoPago não retornou o código Pix (qr_code).');
   }
 
-  return { preferenceId, initPoint };
+  return {
+    paymentId: String(result.id),
+    status: mapMpStatus(result.status as string),
+    qrCode,
+    qrCodeBase64: qrCodeBase64 ?? '',
+    expiresAt: (result.date_of_expiration as string | undefined) ?? null,
+  };
+}
+
+export async function createPixPayment(input: CreatePixPaymentInput): Promise<CreatePixPaymentResult> {
+  const payment = new Payment(getClient());
+
+  const result = await payment.create({
+    body: {
+      transaction_amount: round2(input.amount),
+      description: input.description,
+      payment_method_id: 'pix',
+      external_reference: input.externalReference,
+      notification_url: input.notificationUrl,
+      date_of_expiration: input.expiresAt?.toISOString(),
+      payer: { email: input.payerEmail },
+    },
+  } as any);
+
+  return extractPixTransaction(result);
 }
 
 export async function getPaymentById(paymentId: string) {

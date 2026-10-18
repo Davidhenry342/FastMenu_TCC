@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   computePaymentDelta,
+  extractPixTransaction,
   isMercadoPagoConfigured,
   isTestCredential,
   mapMpStatus,
@@ -45,6 +46,52 @@ describe('Pagamentos MercadoPago — helpers', () => {
       expect(mapMpStatus('in_process')).toBe('pending');
       expect(mapMpStatus('pending')).toBe('pending');
       expect(mapMpStatus(undefined)).toBe('pending');
+    });
+  });
+
+  describe('extractPixTransaction', () => {
+    it('extrai id, status, qr_code, qr_code_base64 e expiração', () => {
+      const result = extractPixTransaction({
+        id: 123456,
+        status: 'pending',
+        date_of_expiration: '2026-01-01T00:00:00.000Z',
+        point_of_interaction: {
+          transaction_data: {
+            qr_code: '00020126580014BR.GOV.BCB.PIX',
+            qr_code_base64: 'iVBORw0KGgo=',
+          },
+        },
+      });
+
+      expect(result).toEqual({
+        paymentId: '123456',
+        status: 'pending',
+        qrCode: '00020126580014BR.GOV.BCB.PIX',
+        qrCodeBase64: 'iVBORw0KGgo=',
+        expiresAt: '2026-01-01T00:00:00.000Z',
+      });
+    });
+
+    it('mapeia status aprovado e usa valores padrão', () => {
+      const result = extractPixTransaction({
+        id: '9',
+        status: 'approved',
+        point_of_interaction: { transaction_data: { qr_code: 'abc' } },
+      });
+
+      expect(result.status).toBe('approved');
+      expect(result.qrCodeBase64).toBe('');
+      expect(result.expiresAt).toBeNull();
+    });
+
+    it('lança erro quando o qr_code ou o id não vêm na resposta', () => {
+      expect(() => extractPixTransaction({ id: 1, status: 'pending' })).toThrow(/qr_code/);
+      expect(() =>
+        extractPixTransaction({
+          status: 'pending',
+          point_of_interaction: { transaction_data: { qr_code: 'x' } },
+        }),
+      ).toThrow(/qr_code/);
     });
   });
 

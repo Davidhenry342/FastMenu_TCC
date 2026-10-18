@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, Minus, Plus, Trash2, X } from 'lucide-react';
+import { Banknote, CheckCircle, Minus, Plus, QrCode, Trash2, X } from 'lucide-react';
 import { useComandas } from '../../contexts/ComandaContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useOrder } from '../../contexts/OrderContext';
 import type { OrderItem, OrderStatus } from '../../models/order';
+import type { PixCharge, PixChargeItem } from '../../models/payment';
+import { PixModal } from '../PixModal';
 import {
   FormatCurrency,
   FormatCurrencyInput,
@@ -17,6 +19,7 @@ type ComandaProps = {
   onClose: () => void;
   tableNumber?: number;
   canDelete?: boolean;
+  variant?: 'customer' | 'employee';
 };
 
 const statusClass: Record<OrderStatus, string> = {
@@ -32,8 +35,16 @@ export function Comanda({
   onClose,
   tableNumber: filterTableNumber,
   canDelete = false,
+  variant = 'customer',
 }: ComandaProps) {
-  const { orderItems, payOrderItem, deleteOrderItem, fetchOrdersByTable } = useOrder();
+  const {
+    orderItems,
+    payOrderItem,
+    createPixCharge,
+    deleteOrderItem,
+    fetchOrdersByTable,
+    refreshOrders,
+  } = useOrder();
   const { customers } = useCustomers();
   const {
     comandas,
@@ -41,6 +52,7 @@ export function Comanda({
     markComandaClosed,
     removeOrderFromComandas,
     fetchComandasByTable,
+    refreshComandas,
   } = useComandas();
 
   const [selections, setSelections] = useState<Record<string, number>>({});
@@ -48,6 +60,7 @@ export function Comanda({
   const [itemModes, setItemModes] = useState<Record<string, PaymentMode>>({});
   const [isPaying, setIsPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [pixCharge, setPixCharge] = useState<PixCharge | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -238,6 +251,90 @@ export function Comanda({
     }));
   };
 
+  const clearSelections = () => {
+    setSelections({});
+    setValueSelections({});
+    setItemModes({});
+  };
+
+  const buildSelectionBreakdown = () => {
+    const items: PixChargeItem[] = [];
+
+    for (const item of displayedItems) {
+      if (isCancelled(item) || isAwaiting(item)) {
+        continue;
+      }
+
+      if (filterTableNumber !== undefined && item.tableNumber !== filterTableNumber) {
+        continue;
+      }
+
+      const mode = itemModes[item.id] ?? 'quantity';
+
+      if (mode === 'quantity') {
+        const qty = selections[item.id];
+
+        if (!qty) {
+          continue;
+        }
+
+        items.push({ orderItemId: item.id, quantity: qty });
+      } else {
+        const raw = valueSelections[item.id];
+
+        if (!raw) {
+          continue;
+        }
+
+        const parsed = ParseCurrency(raw);
+
+        if (parsed <= 0) {
+          continue;
+        }
+
+        items.push({ orderItemId: item.id, amount: parsed });
+      }
+    }
+
+    return items;
+  };
+
+  const handlePix = async () => {
+    setIsPaying(true);
+    setPayError(null);
+
+    try {
+      const items = buildSelectionBreakdown();
+
+      if (items.length === 0) {
+        setPayError('Nenhum item válido para pagamento.');
+        return;
+      }
+
+      const charge = await createPixCharge(items);
+
+      setPixCharge(charge);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Falha ao gerar o código Pix.';
+
+      setPayError(message);
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
+  const handlePixApproved = async () => {
+    clearSelections();
+
+    if (filterTableNumber !== undefined) {
+      await fetchComandasByTable(filterTableNumber).catch(() => {});
+      await fetchOrdersByTable(filterTableNumber).catch(() => {});
+    } else {
+      await refreshComandas().catch(() => {});
+      await refreshOrders().catch(() => {});
+    }
+  };
+
   const handlePay = async () => {
     setIsPaying(true);
     setPayError(null);
@@ -299,9 +396,7 @@ export function Comanda({
         return;
       }
 
-      setSelections({});
-      setValueSelections({});
-      setItemModes({});
+      clearSelections();
 
       if (closed && filterTableNumber !== undefined) {
         getOpenComandasByTable(filterTableNumber).forEach(c => markComandaClosed(c.id));
@@ -588,20 +683,54 @@ export function Comanda({
 
           {payError && <p className={styles.error}>{payError}</p>}
 
-          <button
-            type="button"
-            className={styles.payButton}
-            onClick={handlePay}
-            disabled={!hasSelection || isPaying}
-          >
-            {isPaying ? 'Pagando...' : 'Pagar'}
-          </button>
+          {variant === 'customer' ? (
+            <button
+              type="button"
+              className={styles.payButton}
+              onClick={handlePix}
+              disabled={!hasSelection || isPaying}
+            >
+              <QrCode />
+              {isPaying ? 'Gerando Pix...' : 'Pagar via Pix'}
+            </button>
+          ) : (
+            <div className={styles.payActions}>
+              <button
+                type="button"
+                className={styles.payButton}
+                onClick={handlePix}
+                disabled={!hasSelection || isPaying}
+              >
+                <QrCode />
+                {isPaying ? 'Gerando...' : 'Pix'}
+              </button>
+
+              <button
+                type="button"
+                className={styles.cashButton}
+                onClick={handlePay}
+                disabled={!hasSelection || isPaying}
+              >
+                <Banknote />
+                Dinheiro
+              </button>
+            </div>
+          )}
 
           <button type="button" className={styles.backButton} onClick={onClose}>
             Voltar
           </button>
         </div>
       </div>
+
+      {pixCharge && (
+        <PixModal
+          charge={pixCharge}
+          variant={variant}
+          onApproved={handlePixApproved}
+          onClose={() => setPixCharge(null)}
+        />
+      )}
     </div>
   );
 }

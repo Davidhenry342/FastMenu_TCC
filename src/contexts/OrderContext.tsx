@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { OrderItem } from '../models/order';
+import type { PixCharge, PixChargeItem, PixStatus } from '../models/payment';
 
 function reviveOrder(raw: any): OrderItem {
   return {
@@ -32,6 +33,8 @@ type OrderContextValue = {
   addOrderItem: (item: OrderItem) => Promise<void>;
   updateOrderItem: (id: string, changes: Partial<OrderItem>) => Promise<void>;
   payOrderItem: (id: string, payment: { amount?: number; quantity?: number }) => Promise<PayOrderResult>;
+  createPixCharge: (items: PixChargeItem[]) => Promise<PixCharge>;
+  fetchPixStatus: (paymentId: string) => Promise<PixStatus>;
   deleteOrderItem: (id: string) => Promise<void>;
   refreshOrders: () => Promise<void>;
   fetchOrdersByTable: (tableNumber: number) => Promise<OrderItem[]>;
@@ -177,6 +180,35 @@ export function OrderProvider({ children }: OrderProviderProps) {
     return { order: revived, comandaClosed: data.comandaClosed, remainingTable: data.remainingTable };
   };
 
+  const createPixCharge = async (items: PixChargeItem[]) => {
+    const res = await fetch('/api/payments/pix', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ items }),
+    });
+
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(err.error ?? 'Falha ao gerar o código Pix');
+    }
+
+    return (await res.json()) as PixCharge;
+  };
+
+  const fetchPixStatus = async (paymentId: string) => {
+    const res = await fetch(`/api/payments/${paymentId}/status`, {
+      credentials: 'include',
+    });
+
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(err.error ?? 'Falha ao consultar o pagamento');
+    }
+
+    return (await res.json()) as PixStatus;
+  };
+
   const refreshOrders = async () => {
     await fetchOrders();
   };
@@ -211,7 +243,7 @@ export function OrderProvider({ children }: OrderProviderProps) {
 
   return (
     <OrderContext.Provider
-      value={{ orderItems, isLoading, addOrderItem, updateOrderItem, payOrderItem, deleteOrderItem, refreshOrders, fetchOrdersByTable }}
+      value={{ orderItems, isLoading, addOrderItem, updateOrderItem, payOrderItem, createPixCharge, fetchPixStatus, deleteOrderItem, refreshOrders, fetchOrdersByTable }}
     >
       {children}
     </OrderContext.Provider>

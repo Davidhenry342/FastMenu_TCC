@@ -456,7 +456,19 @@
   font-weight: 700;
 }
 
+.payActions {
+  display: flex;
+
+  gap: 1.2rem;
+}
+
 .payButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.8rem;
+
   width: 100%;
 
   padding: 1.2rem;
@@ -476,6 +488,53 @@
     background 0.2s ease,
     transform 0.1s ease,
     opacity 0.2s ease;
+}
+
+.payButton svg,
+.cashButton svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.cashButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.8rem;
+
+  width: 100%;
+
+  padding: 1.2rem;
+
+  border: 0.1rem solid var(--success);
+  border-radius: 0.8rem;
+
+  background: transparent;
+  color: var(--success);
+
+  font-size: 1.4rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease,
+    opacity 0.2s ease;
+}
+
+.cashButton:hover:not(:disabled) {
+  background: var(--gray-800);
+}
+
+.cashButton:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.cashButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .payButton:hover:not(:disabled) {

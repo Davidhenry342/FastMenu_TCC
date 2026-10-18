@@ -233,7 +233,11 @@ export function Home() {
       </main>
 
       {isComandaOpen && (
-        <Comanda tableNumber={mesaNumber} onClose={() => setIsComandaOpen(false)} />
+        <Comanda
+          tableNumber={mesaNumber}
+          variant="customer"
+          onClose={() => setIsComandaOpen(false)}
+        />
       )}
 
       {selectedProduct && (

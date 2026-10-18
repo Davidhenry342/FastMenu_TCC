@@ -131,7 +131,7 @@ model OrderItem {
 model Payment {
   id                String        @id @default(cuid())
   provider          String        @default("mercadopago")
-  mpPreferenceId    String        @unique
+  mpPreferenceId    String?       @unique
   mpPaymentId       String?       @unique
   externalReference String
   orderItemId       String?
@@ -141,6 +141,9 @@ model Payment {
   amount            Decimal       @db.Decimal(10, 2)
   status            PaymentStatus @default(pending)
   method            String?
+  qrCode            String?       @db.Text
+  items             Json?
+  expiresAt         DateTime?
   rawPayload        Json?
   paidAt            DateTime?
   createdAt         DateTime      @default(now())
