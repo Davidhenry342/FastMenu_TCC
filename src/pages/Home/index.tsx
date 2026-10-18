@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Comanda } from '../../components/Comanda';
 import { Container } from '../../components/Container';
@@ -13,7 +13,6 @@ import { useProducts } from '../../contexts/ProductContext';
 import { useTables } from '../../contexts/TableContext';
 import { categories } from '../../data/categories';
 import type { Product } from '../../models/product';
-import { averageWaitByCategory } from '../../utils/waitTime';
 import styles from './styles.module.css';
 
 export function Home() {
@@ -25,7 +24,7 @@ export function Home() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isComandaOpen, setIsComandaOpen] = useState(false);
   const [conflictTable, setConflictTable] = useState<number | null>(null);
-  const { addOrderItem, orderItems, fetchOrdersByTable } = useOrder();
+  const { addOrderItem, fetchOrdersByTable, waitAverages, fetchWaitEstimate } = useOrder();
   const { products } = useProducts();
   const { tables, isLoading: tablesLoading } = useTables();
   const { openComanda, addOrderToComanda, getOpenComandaByTable, fetchComandasByTable } =
@@ -75,13 +74,23 @@ export function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentCustomer, mesaNumber, isMesaMissing, isMesaInvalid]);
 
-  const averageWait = useMemo(
-    () => averageWaitByCategory(orderItems),
-    [orderItems],
-  );
+  useEffect(() => {
+    if (!currentCustomer || isMesaMissing || isMesaInvalid) {
+      return;
+    }
+
+    fetchWaitEstimate().catch(() => {});
+
+    const timer = window.setInterval(() => {
+      fetchWaitEstimate().catch(() => {});
+    }, 20000);
+
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCustomer, isMesaMissing, isMesaInvalid]);
 
   const waitFor = (categoryId: string, fallback: number) =>
-    fallback + (averageWait.get(categoryId) ?? 0);
+    fallback + (waitAverages.get(categoryId) ?? 0);
 
   const categoryOrder = new Map(
     categories.map((category, index) => [category.id, index]),

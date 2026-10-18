@@ -35,6 +35,8 @@ type OrderContextValue = {
   payOrderItem: (id: string, payment: { amount?: number; quantity?: number }) => Promise<PayOrderResult>;
   createPixCharge: (items: PixChargeItem[]) => Promise<PixCharge>;
   fetchPixStatus: (paymentId: string) => Promise<PixStatus>;
+  waitAverages: Map<string, number>;
+  fetchWaitEstimate: () => Promise<void>;
   deleteOrderItem: (id: string) => Promise<void>;
   refreshOrders: () => Promise<void>;
   fetchOrdersByTable: (tableNumber: number) => Promise<OrderItem[]>;
@@ -48,6 +50,7 @@ type OrderProviderProps = {
 
 export function OrderProvider({ children }: OrderProviderProps) {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [waitAverages, setWaitAverages] = useState<Map<string, number>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchOrders = async () => {
@@ -209,6 +212,21 @@ export function OrderProvider({ children }: OrderProviderProps) {
     return (await res.json()) as PixStatus;
   };
 
+  const fetchWaitEstimate = async () => {
+    const res = await fetch('/api/orders/wait-estimate', { credentials: 'include' });
+
+    if (!res.ok) {
+      throw new Error('Falha ao carregar a estimativa de espera');
+    }
+
+    const data = (await res.json()) as { averages?: Record<string, number> };
+    const entries = Object.entries(data.averages ?? {}).map(
+      ([categoryId, minutes]) => [categoryId, Number(minutes)] as const,
+    );
+
+    setWaitAverages(new Map(entries));
+  };
+
   const refreshOrders = async () => {
     await fetchOrders();
   };
@@ -243,7 +261,7 @@ export function OrderProvider({ children }: OrderProviderProps) {
 
   return (
     <OrderContext.Provider
-      value={{ orderItems, isLoading, addOrderItem, updateOrderItem, payOrderItem, createPixCharge, fetchPixStatus, deleteOrderItem, refreshOrders, fetchOrdersByTable }}
+      value={{ orderItems, isLoading, addOrderItem, updateOrderItem, payOrderItem, createPixCharge, fetchPixStatus, waitAverages, fetchWaitEstimate, deleteOrderItem, refreshOrders, fetchOrdersByTable }}
     >
       {children}
     </OrderContext.Provider>

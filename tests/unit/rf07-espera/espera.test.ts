@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { averageWaitByCategory } from '../../../src/utils/waitTime';
+import { averageWaitByCategory } from '../../../server/src/lib/waitTime';
+import type { WaitRow } from '../../../server/src/lib/waitTime';
 import type { OrderItem } from '../../../src/models/order';
 
 function makeItem(overrides: Partial<OrderItem> = {}): OrderItem {
@@ -20,6 +21,23 @@ function makeItem(overrides: Partial<OrderItem> = {}): OrderItem {
   } as OrderItem;
 }
 
+const categoryNames: Record<string, string> = {
+  '1': 'Entradas',
+  '2': 'Pratos Principais',
+  '3': 'Bebidas',
+  '4': 'Sobremesas',
+};
+
+function toRow(item: OrderItem): WaitRow {
+  return {
+    status: item.status,
+    categoryId: item.product.categoryId,
+    categoryName: categoryNames[item.product.categoryId],
+    preparationTime: item.product.preparationTime,
+    quantity: item.quantity,
+  };
+}
+
 // Espelham src/pages/Home (waitFor), src/pages/admin/Cozinha
 // (deliveryEstimate, ordenação) e ProductCard (fallback).
 function waitForEstimate(categoryId: string, fallback: number, averages: Map<string, number>): number {
@@ -36,7 +54,7 @@ function kitchenStatusRank(status: string): number {
 
 describe('RF07 Estimar Tempo de Entrega — fila e previsão', () => {
   it('lista vazia gera mapa vazio', () => {
-    expect(averageWaitByCategory([]).size).toBe(0);
+    expect(Object.keys(averageWaitByCategory([])).length).toBe(0);
   });
 
   it('múltiplas categorias geram uma média por categoria', () => {
@@ -44,9 +62,18 @@ describe('RF07 Estimar Tempo de Entrega — fila e previsão', () => {
       makeItem({ id: 'a', product: { ...makeItem().product, categoryId: '1', preparationTime: 10 } }),
       makeItem({ id: 'b', quantity: 2, product: { ...makeItem().product, categoryId: '2', preparationTime: 30 } }),
     ];
-    const avg = averageWaitByCategory(items);
-    expect(avg.get('1')).toBe(10);
-    expect(avg.get('2')).toBe(30);
+    const avg = averageWaitByCategory(items.map(toRow));
+    expect(avg['1']).toBe(10);
+    expect(avg['2']).toBe(30);
+  });
+
+  it('itens fora de produção não entram na média (fila global)', () => {
+    const items = [
+      makeItem({ id: 'a', status: 'Em produção', product: { ...makeItem().product, categoryId: '1', preparationTime: 10 } }),
+      makeItem({ id: 'b', status: 'Aguardando confirmação', product: { ...makeItem().product, categoryId: '1', preparationTime: 40 } }),
+    ];
+    const avg = averageWaitByCategory(items.map(toRow));
+    expect(avg['1']).toBe(10);
   });
 
   it('waitFor soma fallback + média (não-bebida)', () => {
@@ -55,9 +82,11 @@ describe('RF07 Estimar Tempo de Entrega — fila e previsão', () => {
   });
 
   it('waitFor de bebida usa só o fallback (sem fila)', () => {
-    const avg = averageWaitByCategory([
-      makeItem({ product: { ...makeItem().product, categoryId: '3', preparationTime: 5 } }),
-    ]);
+    const rows = [
+      toRow(makeItem({ product: { ...makeItem().product, categoryId: '3', preparationTime: 5 } })),
+    ];
+    const avg = new Map(Object.entries(averageWaitByCategory(rows)));
+    expect(avg.size).toBe(0);
     expect(waitForEstimate('3', 5, avg)).toBe(5);
   });
 

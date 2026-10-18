@@ -5,7 +5,8 @@ import {
   FormatTime,
   ParseCurrency,
 } from '../../../src/utils/format';
-import { averageWaitByCategory } from '../../../src/utils/waitTime';
+import { averageWaitByCategory } from '../../../server/src/lib/waitTime';
+import type { WaitRow } from '../../../server/src/lib/waitTime';
 import type { OrderItem } from '../../../src/models/order';
 
 function makeItem(overrides: Partial<OrderItem> = {}): OrderItem {
@@ -24,6 +25,23 @@ function makeItem(overrides: Partial<OrderItem> = {}): OrderItem {
     status: 'Em produção',
     ...overrides,
   } as OrderItem;
+}
+
+const categoryNames: Record<string, string> = {
+  '1': 'Entradas',
+  '2': 'Pratos Principais',
+  '3': 'Bebidas',
+  '4': 'Sobremesas',
+};
+
+function toRow(item: OrderItem): WaitRow {
+  return {
+    status: item.status,
+    categoryId: item.product.categoryId,
+    categoryName: categoryNames[item.product.categoryId],
+    preparationTime: item.product.preparationTime,
+    quantity: item.quantity,
+  };
 }
 
 describe('RF01 Manter Cardápio — formatação e espera', () => {
@@ -48,7 +66,7 @@ describe('RF01 Manter Cardápio — formatação e espera', () => {
       makeItem({ id: 'b', quantity: 3, product: { ...makeItem().product, preparationTime: 20 } }),
     ];
     // (10*1 + 20*3) / 4 = 17.5 -> 18
-    expect(averageWaitByCategory(items).get('2')).toBe(18);
+    expect(averageWaitByCategory(items.map(toRow))['2']).toBe(18);
   });
 
   it('averageWaitByCategory ignora itens fora de Em produção', () => {
@@ -57,7 +75,7 @@ describe('RF01 Manter Cardápio — formatação e espera', () => {
       makeItem({ id: 'b', status: 'Cancelado' }),
       makeItem({ id: 'c', status: 'Entregue' }),
     ];
-    expect(averageWaitByCategory(items).size).toBe(0);
+    expect(Object.keys(averageWaitByCategory(items.map(toRow))).length).toBe(0);
   });
 
   it('averageWaitByCategory ignora Bebidas (tempo fixo do produto)', () => {
@@ -67,27 +85,30 @@ describe('RF01 Manter Cardápio — formatação e espera', () => {
         product: { ...makeItem().product, categoryId: '3', preparationTime: 5 },
       }),
     ];
-    expect(averageWaitByCategory(items).has('3')).toBe(false);
+    expect('3' in averageWaitByCategory(items.map(toRow))).toBe(false);
   });
 
   it('averageWaitByCategory ignora Bebidas por nome mesmo com outro id', () => {
-    const items = [
-      makeItem({
-        id: 'beb2',
-        product: {
-          ...makeItem().product,
-          categoryId: 'x',
-          category: { name: 'Bebidas' },
-        } as unknown as OrderItem['product'],
-      }),
+    const rows: WaitRow[] = [
+      {
+        status: 'Em produção',
+        categoryId: 'x',
+        categoryName: 'Bebidas',
+        preparationTime: 5,
+        quantity: 1,
+      },
     ];
-    expect(averageWaitByCategory(items).size).toBe(0);
+    expect(Object.keys(averageWaitByCategory(rows)).length).toBe(0);
   });
 
   it('waitFor do cardápio: bebida usa só o preparationTime (fallback)', () => {
-    const averages = averageWaitByCategory([
-      makeItem({ product: { ...makeItem().product, categoryId: '3', preparationTime: 5 } }),
-    ]);
+    const averages = new Map(
+      Object.entries(
+        averageWaitByCategory([
+          toRow(makeItem({ product: { ...makeItem().product, categoryId: '3', preparationTime: 5 } })),
+        ]),
+      ),
+    );
     const waitFor = (categoryId: string, fallback: number) =>
       fallback + (averages.get(categoryId) ?? 0);
     expect(waitFor('3', 5)).toBe(5);

@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { displayStatusOf, mapStatusFromPrisma, settleOrderItemPayment, toPrismaStatus } from '../lib/payments';
+import { averageWaitByCategory } from '../lib/waitTime';
 import { requireCustomerOrEmployee, requireEmployee, requireRole } from '../middleware/auth';
 
 const router = Router();
@@ -42,6 +43,25 @@ router.get('/by-table/:tableNumber', requireCustomerOrEmployee, async (req, res)
   });
 
   res.json(orders.map(mapStatusFromPrisma));
+});
+
+router.get('/wait-estimate', requireCustomerOrEmployee, async (_req, res) => {
+  const items = await prisma.orderItem.findMany({
+    where: { status: 'Em_produção' },
+    include: { product: { include: { category: true } } },
+  });
+
+  const averages = averageWaitByCategory(
+    items.map(item => ({
+      status: item.status,
+      categoryId: item.product.categoryId,
+      categoryName: item.product.category.name,
+      preparationTime: item.product.preparationTime,
+      quantity: item.quantity,
+    })),
+  );
+
+  res.json({ averages });
 });
 
 router.post('/', requireCustomerOrEmployee, async (req, res) => {
