@@ -278,9 +278,9 @@ router.post('/pix', requireCustomerOrEmployee, async (req, res) => {
     }
   }
 
-  let payerEmail: string | undefined;
+  let payerEmail = process.env.MERCADOPAGO_PAYER_EMAIL?.trim() || undefined;
 
-  if (authReq.customer) {
+  if (!payerEmail && authReq.customer) {
     const customer = await prisma.customer.findUnique({
       where: { id: authReq.customer.id },
       select: { email: true },
@@ -289,10 +289,10 @@ router.post('/pix', requireCustomerOrEmployee, async (req, res) => {
     payerEmail = customer?.email ?? undefined;
   }
 
-  payerEmail = payerEmail ?? (process.env.MERCADOPAGO_PAYER_EMAIL?.trim() || undefined);
-
   if (!payerEmail) {
-    res.status(400).json({ error: 'E-mail do pagador não configurado (MERCADOPAGO_PAYER_EMAIL).' });
+    res.status(400).json({
+      error: 'E-mail do pagador não configurado. Defina MERCADOPAGO_PAYER_EMAIL ou use um cliente com e-mail.',
+    });
     return;
   }
 
