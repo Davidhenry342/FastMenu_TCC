@@ -10,13 +10,17 @@ export function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mesaParam = searchParams.get('mesa');
-  const { findByPhone, addCustomer, login, getMyOpenComanda, currentCustomer } = useCustomers();
+  const { findByPhone, addCustomer, login, getMyOpenComanda, currentCustomer } =
+    useCustomers();
 
   const [conflictTable, setConflictTable] = useState<number | null>(null);
 
   const navigateToCardapio = (mesaOverride?: number) => {
     const target = mesaOverride ?? (mesaParam ? Number(mesaParam) : undefined);
-    const suffix = target !== undefined && !Number.isNaN(target) ? `?mesa=${encodeURIComponent(String(target))}` : '';
+    const suffix =
+      target !== undefined && !Number.isNaN(target)
+        ? `?mesa=${encodeURIComponent(String(target))}`
+        : '';
 
     navigate(`/cardapio${suffix}`);
   };
@@ -103,12 +107,12 @@ export function Login() {
     }
   };
 
-  const handleConfirmNo = () => {
-    setName('');
-    setEmail('');
-    setStep('register');
-    setError(null);
-  };
+  // const handleConfirmNo = () => {
+  //   setName('');
+  //   setEmail('');
+  //   setStep('register');
+  //   setError(null);
+  // };
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim()) {
@@ -179,7 +183,8 @@ export function Login() {
           <h1 className={styles.title}>Mesa ocupada</h1>
 
           <p className={styles.subtitle}>
-            Você já possui comanda aberta na mesa {conflictTable}. Finalize antes de pedir em outra mesa.
+            Você já possui comanda aberta na mesa {conflictTable}. Finalize
+            antes de pedir em outra mesa.
           </p>
 
           <button
@@ -251,13 +256,13 @@ export function Login() {
               Sim, sou eu
             </button>
 
-            <button
+            {/* <button
               type="button"
               className={styles.secondaryButton}
               onClick={handleConfirmNo}
             >
               Não, não sou eu
-            </button>
+            </button> */}
 
             <button
               type="button"
